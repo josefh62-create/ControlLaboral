@@ -1,4 +1,4 @@
-# ControlLaboral — Plan maestro integral de desarrollo V2.0
+# ControlLaboral — Plan maestro integral de desarrollo v3.0
 
 **Reforma de jornada laboral en México 2026–2030**  
 **Versión documental:** 3.0 | **Fecha de referencia:** 24 de noviembre de 2026  
@@ -7,7 +7,7 @@
 
 ## 0. Mandato de desarrollo: alternativa C aprobada
 
-**Nombre provisional:** ControlLaboral — Sistema integral de control de asistencia y jornada laboral. El nombre comercial puede cambiar sin alterar los requisitos.
+**Nombre definitivo:** ControlLaboral — Sistema integral de control de asistencia y jornada laboral. Confirmado por el propietario el 24/11/2026.
 
 **Decisión aprobada:** desarrollar una V2 independiente, manteniendo V1 operativa e intacta. V1 es referencia técnica, funcional y operativa permanente, no solo una fuente para la auditoría inicial. Este mandato prevalece sobre cualquier redacción heredada que pudiera sugerir modificar V1. Los capítulos 1–18 consolidan los requisitos anteriores; los capítulos 19–21 establecen el gobierno técnico de V2 el capítulo 22 define SQLite local y los capítulos 23–30 consolidan la arquitectura Desktop, Web y Móvil aprobada.
 
@@ -776,9 +776,9 @@ Añadir filas por cada componente, incluyendo interfaces, reportes, algoritmos, 
 
 ### Control de decisiones y pendientes
 
-Confirmados por el propietario: SQLite local como motor inicial; alternativa C; inspección permanente de V1; eliminación del Excel operativo mediante CRUD de empleados; horarios y tolerancias variables de 0–15 min; alertas legales; checadas originales inalterables; captura complementaria incluso de jornadas completas; acta semanal única solo cuando existan incidencias, firmada por empleado y jefe de personal; consulta, reportes y reimpresión por periodos y filtros combinables.
+Confirmados por el propietario: nombre ControlLaboral; SQLite local como motor inicial; alternativa C; inspección permanente de V1; eliminación del Excel operativo mediante CRUD de empleados; horarios y tolerancias variables de 0–15 min; alertas legales; checadas originales inalterables; captura complementaria incluso de jornadas completas; acta semanal única solo cuando existan incidencias, firmada por empleado y jefe de personal; consulta, reportes y reimpresión por periodos y filtros combinables.
 
-Propuestas técnicas sujetas a validación: nombre ControlLaboral, tecnología restante y esquema definitivo, captura grupal, folio de contingencia, mismo folio lógico con versiones rectificatorias, política de conservación, modalidad de despliegue y formato de entrega a autoridad. Confirmar las reglas de semana entre vigencias, tratamiento de excepciones y disposiciones STPS vigentes con fuente oficial. El sistema no es nómina ni garantiza por sí solo el cumplimiento legal.
+Propuestas técnicas sujetas a validación: tecnología restante y esquema definitivo, captura grupal, folio de contingencia, mismo folio lógico con versiones rectificatorias, política de conservación, modalidad de despliegue y formato de entrega a autoridad. Confirmar las reglas de semana entre vigencias, tratamiento de excepciones y disposiciones STPS vigentes con fuente oficial. El sistema no es nómina ni garantiza por sí solo el cumplimiento legal.
 
 
 ## 22. Persistencia local SQLite — decisión inicial del proyecto
@@ -1060,7 +1060,7 @@ Todos los escenarios siguientes son especificaciones, no pruebas ejecutadas. Ade
 
 | Tema | Estado |
 |---|---|
-| Nombre de trabajo ControlLaboral | Adoptado para la documentación |
+| Nombre ControlLaboral | Definitivo (confirmado 24/11/2026) |
 | Alternativa C y revisión permanente de V1 | Obligatorio |
 | SQLite Desktop como fuente administrativa | Aprobado |
 | Supabase para publicación y consulta | Aprobado |
