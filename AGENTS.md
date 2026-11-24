@@ -4,7 +4,21 @@
 - Proyecto editable: `D:\Proyectos\ControlLaboral`.
 - Proyecto de referencia exclusivamente de lectura: `D:\Proyectos\app_revisar_checadas`.
 - Leer íntegramente `ControlLaboral_Plan_Maestro_v3.0.md` antes de diseñar o implementar. Si hay contradicciones, documentarlas y solicitar resolución; no inventar requisitos.
-- Responder y documentar en español. No elegir lenguaje, framework ni dependencias definitivas antes de la auditoría y aprobación del responsable.
+- Responder y documentar en español. El lenguaje, framework, arquitectura y estándar de UI ya están decididos (ver «Estándar técnico»); las dependencias adicionales (PDF, Excel, etc.) se eligen tras la auditoría y con aprobación del responsable.
+
+## Estándar técnico (decisión del propietario, 24/11/2026)
+Esta decisión prevalece sobre cualquier redacción del plan maestro que indique no elegir tecnología antes de la auditoría. Fuentes obligatorias: `D:\Proyectos\CLAUDE.md` (reglas del SSD) y `VS_SIVEMA_MVC_PY/ARQUITECTURA_APPS_PYTHON.md` (documento maestro de arquitectura). Leerlas antes de cualquier cambio de arquitectura, nomenclatura o diseño.
+- **Runtime:** Python 3.14.7 portátil `PyPortable314`, referenciado siempre de forma relativa (`run.bat`, `compilar_ui.bat`, `.vscode/settings.json`). Sin `venv`. Verificar en PyPI el soporte 3.14 de cada dependencia antes de agregarla.
+- **Framework:** PySide6 para Desktop; SQLite como base administrativa local.
+- **Patrón MVC estricto** con la nomenclatura del SSD: `Vistas/frm_<modulo>.ui`, `Vistas/frm_<modulo>.py` (generado, nunca editar), `Vistas/vista_<modulo>.py` (`Vista<Modulo>`), `Modelos/modelo_<modulo>.py` (`Modelo<Modulo>`, hereda `ModeloBase`), `Controladores/controlador_<modulo>.py` (`Controlador<Modulo>`), más `Servicios/` y repositorios según el documento maestro §3.
+- **Motor de cálculo de jornada:** capa de servicio/dominio en Python puro, sin importar PySide6 ni SQLite, con datos de entrada explícitos (horario, norma, tolerancias, checadas) para que sea determinista y se pueda probar con datos sintéticos (plan maestro caps. 19 y 22).
+- **UI:**
+  - Toda la interfaz se diseña en archivos `.ui` con Qt Designer; nunca construir formularios por código. Recompilar después de cada edición.
+  - Compilar con `compilar_ui.bat` usando los binarios reales `PyPortable314\Lib\site-packages\PySide6\uic.exe` y `rcc.exe` con `-g python`; nunca los wrappers `pyside6-uic.exe`/`pyside6-rcc.exe` (Windows App Control los bloquea). Recursos en `Recursos/Imagenes/<app>.qrc` → `<app>_rc.py`.
+  - Soporte obligatorio de modo claro y oscuro.
+  - Secciones y grupos de controles dentro de `QFrame` o `QGroupBox`, cada uno con su propio layout; no amontonar todo en un layout raíz.
+  - Prefijos de widgets (`qbtn/qlbl/qtxt/qcmb/qspn/qdte/chk/qtbl/grp/…`), colores, zonas y control activo/inactivo conforme al documento maestro §5–§7.
+- **Distribución:** paquete con `D:\Proyectos\_instaladores\empaquetar.ps1` e `instalador.json`; la BD de producción nunca se sobrescribe y los cambios de esquema van por migraciones idempotentes al arrancar.
 
 ## Protección de la aplicación existente
 - Prohibido modificar, crear, borrar, renombrar o mover archivos, configuraciones, bases de datos y repositorios de la aplicación original. No ejecutar compilaciones, restauraciones, instalaciones, migraciones, pruebas ni comandos que puedan escribir allí o afectar producción.
@@ -15,7 +29,7 @@
 ## Primera fase: auditoría sin implementación
 - Inventariar estructura, tecnologías, dependencias, entrada de checadas, Excel, datos, horarios, tolerancias, cálculo diario/semanal, interfaz, reportes, seguridad y pruebas existentes.
 - Identificar constantes laborales, supuestos, acoplamientos, reglas implícitas, riesgos y brechas frente al plan maestro. Citar rutas y símbolos concretos; distinguir hechos comprobados de hipótesis.
-- Elaborar diagnóstico, matriz de reutilización inicial, propuesta de arquitectura, estrategia de migración, pruebas comparativas y plan por fases. No escribir código de aplicación ni elegir tecnologías irreversiblemente. Esperar aprobación explícita antes de implementar.
+- Elaborar diagnóstico, matriz de reutilización inicial, propuesta de arquitectura, estrategia de migración, pruebas comparativas y plan por fases. La propuesta de arquitectura se diseña sobre el «Estándar técnico» ya aprobado; la auditoría decide qué se reutiliza, adapta o reemplaza de V1, no el lenguaje ni el framework. No escribir código de aplicación. Esperar aprobación explícita antes de implementar.
 
 ## Reglas funcionales no negociables
 - SQLite local como fuente administrativa inicial; catálogo CRUD de empleados con bajas lógicas e historial, migración validada desde Excel, sin dependencia operativa posterior.
