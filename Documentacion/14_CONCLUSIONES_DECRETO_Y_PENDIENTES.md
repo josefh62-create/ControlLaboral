@@ -40,7 +40,17 @@ Base: texto literal del decreto en `00_FUENTE_LEGAL_DECRETO_2026-05-01.md`. Inte
    - Cada semana guarda qué criterio usó. Mientras no haya dictamen, se recomienda calcular y mostrar **ambos** resultados.
 4. Siempre: tope diario 12 h, 4 h/día y 4 días/semana de extra art. 66, excedente art. 68 y descanso semanal, como alertas independientes que nunca borran tiempo.
 
-## 5. Preguntas para mañana
+## 5. Decisiones del 25/11/2026
+
+- Se rehacen contratos y reglamento. Esquema previsto: 5 × 8 + 6 (46 h). El registro electrónico espera las disposiciones STPS (01/01/2027).
+- Todos los topes 2027–2030 son configurables; la distribución del horario puede cambiar cada año (p. ej. 2028: 5 × 7 h 36 min + 6 h = 44 h). Cálculo en minutos. Plan §4.2 actualizado.
+- **Q05 resuelta (provisional):** criterio «semanal con acuerdo». La semana determina cuánta extra hay (lo que excede el tope vigente); la extra se asigna a los excesos diarios más recientes para evaluar art. 66/68. Plan §5.2–5.3 actualizado. Se revisará si el reglamento STPS o el asesor laboral establecen otra regla.
+
+- **Q06 resuelta:** sábado y domingo dejan de tener jornada fija de 8 h; los horarios se asignan por trabajador/grupo y por año (plan §4.2).
+- **Q07 resuelta:** V2 calcula solo hacia adelante, desde el 01/01/2027 (tope 46 h y reglas STPS del registro electrónico). No reproduce resultados históricos de V1; el histórico de V1 se conserva para consulta. Riesgo: quedan ~5 semanas; V1 debe seguir disponible como respaldo durante la operación paralela (plan §20).
+- **Q08 (parcial):** los usuarios administran los códigos; en un reloj compartido por varias empresas el código es único. V2 identifica por (reloj, código, vigencia) → empleado y bloquea solapamientos (plan §13.1). Si el reglamento STPS cambia la identificación (CURP/NSS), solo cambia esa relación. Pendiente: qué es «Empresa base».
+
+## 6. Preguntas pendientes
 
 1. ¿Qué esquemas de jornada usan hoy o quieren usar (5 × 8 + sábado, 6 × 7:40, 4 × 12, turnos nocturnos)? ¿Cuáles tienen acuerdo firmado?
 2. ¿Aceptan que el criterio de inicio de extra sea configurable y que el asesor laboral elija la lectura (A) o (B) y el criterio de Q05?

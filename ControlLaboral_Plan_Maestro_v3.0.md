@@ -125,7 +125,7 @@ Campos: horario, trabajador/grupo asignado, centro, zona horaria, días, interva
 - HO06: identificar horario faltante; no inventar 8 h ni 48 h por defecto.
 - HO07: prever horarios del siguiente año y reporte de trabajadores cuyo horario excederá el nuevo máximo; no imponer unilateralmente una distribución.
 
-Ejemplo diurno (horas efectivas):
+Ejemplo diurno ilustrativo (horas efectivas). No es una regla: la distribución de cada año la define el horario acordado vigente.
 
 | Año | Lunes a viernes por día | Sábado | Total |
 |---|---:|---:|---:|
@@ -135,7 +135,7 @@ Ejemplo diurno (horas efectivas):
 | 2029 | 8 | 2 | 42 |
 | 2030 | 8 | 0 | 40 |
 
-Otra distribución posible en 2027: seis días de 7 h 40 min. No asumir que la reducción siempre ocurre el sábado.
+Otras distribuciones posibles: en 2027, seis días de 7 h 40 min; en 2028, lunes a viernes de 7 h 36 min (7.6 h = 456 min) y sábado de 6 h (= 44 h). No asumir que la reducción siempre ocurre el sábado ni que la jornada de lunes a viernes se mantiene en 8 h; cada año puede cambiar la distribución completa. El sistema guarda y calcula en minutos, nunca en horas decimales redondeadas.
 
 ### 4.3 Tolerancias (TO)
 
@@ -209,16 +209,27 @@ Clasificar intervalos efectivos confirmados, no solo la diferencia entre la prim
 
 Para cada intervalo, dividir en fronteras relevantes: inicio/fin de horario, descansos, medianoche, fin de semana, cambio de vigencia y agotamiento de topes. Cada segmento conserva inicio, fin, duración, categoría base, etiquetas adicionales y regla aplicada.
 
-La jornada ordinaria termina cuando concluye el intervalo ordinario acordado o se agota el límite ordinario aplicable (diario o semanal), lo que ocurra primero en el régimen normal. El trabajo efectivo confirmado antes del inicio o después del fin acordado puede ser extraordinario; no desplazar automáticamente el horario por una entrada tardía. Las redistribuciones válidas se evalúan como excepción explícita. Los descansos semanales/festivos y regímenes especiales requieren clasificación propia y revisión de posibles concurrencias.
+**Criterio de inicio de extra (decisión del propietario, 25/11/2026; parámetro normativo versionado, sujeto al reglamento STPS y al dictamen del asesor laboral):** criterio «semanal con acuerdo» por defecto desde 2027.
+
+1. **Cuánto:** extra semanal = máx(0, tiempo efectivo confirmado de la semana − tope ordinario semanal vigente, p. ej. 46 h en 2027). Los días cortos se compensan con los largos dentro de la misma semana.
+2. **Dónde:** las horas extra se asignan solo a segmentos de exceso diario (trabajo confirmado fuera del horario acordado del día, incluido el trabajo en días sin horario). Si el exceso total supera la extra semanal (porque hubo faltantes), los excesos más antiguos compensan los faltantes y la extra se asigna a los excesos más recientes. Por construcción, la extra semanal nunca supera la suma de excesos diarios.
+3. **Límites:** con esa asignación se evalúan los límites del art. 66 (4 h/día, 4 días/semana), el tope diario de 12 h del art. 68 y los tramos doble/triple. Nunca se cargan al último día todas las extras de la semana.
+4. El criterio se guarda en cada semana calculada. Si el reglamento STPS o el dictamen lo cambian, se crea una nueva versión del parámetro, sin cambiar código.
+
+El trabajo efectivo confirmado antes del inicio o después del fin acordado es exceso diario y es candidato a extra según el criterio anterior; no desplazar automáticamente el horario por una entrada tardía. Las redistribuciones válidas se evalúan como excepción explícita. Los descansos semanales/festivos y regímenes especiales requieren clasificación propia y revisión de posibles concurrencias.
 
 Ejemplo horario 07:00–12:00 y 13:00–16:00; checadas 06:50, 12:00, 13:00, 16:25. Si todo el tiempo fuera de horario fue efectivamente trabajado: 8 h normales y 35 min extras. Si los 10 min previos fueron solo presencia, 25 min extras; si no se sabe, conservar esos 10 min como pendientes.
 
 Ejemplo 2027: trabajador con 40 h normales acumuladas de lunes a viernes; sábado programado 07:00–13:00 continuo (descanso computable según corresponda). Si trabaja hasta 15:00, acumula 6 h ordinarias y 2 h extraordinarias. Si existe descanso no computable, ajustar frontera con intervalos efectivos y horario acordado.
 
+Ejemplo 2027, horario 5 × 8 + 6: trabaja 9 h de lunes a sábado (54 h). Extra semanal = 54 − 46 = 8 h. Excesos diarios: 1 h lunes a viernes + 3 h sábado = 8 h. Resultado: 1 h extra por día de lunes a viernes y 3 h el sábado. Ningún día rebasa 4 h; extras en 6 días → alerta del límite de 4 días del art. 66, sin borrar tiempo.
+
+Ejemplo de compensación: lunes 10 h, martes 10 h, sábado 4 h, resto conforme a horario (46 h). Extra semanal = 0; los excesos de lunes y martes compensan el faltante del sábado. Si el sábado fueran 6 h (48 h): extra = 2 h, asignada al exceso más reciente (martes).
+
 ### 5.3 Acumulación semanal y clasificación de extras
 
 - Acumular ordinarias y extraordinarias por trabajador y semana laboral, no por reloj o centro; si existe más de un contrato/régimen, definir alcance con RH.
-- Clasificar primero cada segmento por horario y límites diarios; validar acumulado ordinario semanal y reclasificar solo segmentos todavía ordinarios cuando corresponda. Nunca contar el mismo minuto dos veces como ordinario y extra.
+- Marcar primero cada segmento como dentro de horario o exceso diario; calcular la extra semanal según el criterio vigente (§5.2) y asignarla a los segmentos de exceso. El exceso no asignado como extra es ordinario. Nunca contar el mismo minuto dos veces como ordinario y extra.
 - En casos regulares, asignar cronológicamente el tramo doble hasta el máximo semanal art. 66 y el excedente al tramo triple. Si un segmento cruza umbral, dividirlo exactamente.
 - Evaluar por separado límite diario y número de días de extras art. 66. Si se rebasan antes del umbral semanal, marcar revisión jurídica de clasificación; no ocultar ni declarar automáticamente legal el tramo por ser menor a 9 h.
 - Más allá del tramo adicional de 4 h, mantener el tiempo extraordinario y etiqueta de exceso legal. No inventar una cuarta categoría de pago ni limitar el cómputo a 13/14/15/16 h.
@@ -239,8 +250,11 @@ para cada trabajador y semana:
         si descanso_no_computable: clasificar_no_laborado(); continuar
         si trabajo_no_confirmado: marcar_pendiente(); continuar
         clasificar_categoria_base_por_horario_y_regimen()
-        aplicar_topes_ordinarios_sin_duplicar_minutos()
-        acumular_tiempo_confirmado_y_extras()
+        marcar_dentro_de_horario_o_exceso_diario()
+        acumular_tiempo_confirmado()
+    extra = max(0, confirmado_semana - tope_semanal_vigente)
+    asignar_extra_a_excesos_mas_recientes(extra)
+    para segmento en orden cronologico:
         asignar_tramos_extra_y_marcar_excepciones_de_distribucion()
         evaluar_alertas_diarias_semanales_y_de_descanso()
     validar_conciliacion_de_totales()
