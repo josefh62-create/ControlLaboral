@@ -20,8 +20,12 @@ class ControladorPrincipal(ControladorBase):
         self.tema_actual = aplicar_tema(app, tema_del_sistema(app))
         vista.tema_solicitado.connect(self.alternar_tema)
         vista.salir_solicitado.connect(self.salir)
-        for clave, datos in self.modulos_disponibles.items():
-            vista.agregar_modulo(clave, datos["titulo"])
+        vista.modulo_solicitado.connect(self.abrir_modulo)
+
+    def abrir_modulo(self, clave: str) -> None:
+        """Abre el modulo registrado y marca su boton en el sidebar."""
+        if clave in self.modulos_disponibles:
+            self.vista.actualizar_sidebar(clave)
 
     def alternar_tema(self) -> None:
         self.tema_actual = alternar_tema(self.app, self.tema_actual)

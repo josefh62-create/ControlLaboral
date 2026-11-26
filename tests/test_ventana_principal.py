@@ -37,7 +37,6 @@ def test_estructura_de_la_vista(ventana):
 def test_modulos_disponibles_vacio(ventana):
     vista, controlador = ventana
     assert controlador.modulos_disponibles == {}
-    assert vista.claves_modulo == []
 
 
 def test_boton_tema_alterna(ventana, app):
@@ -58,10 +57,26 @@ def test_boton_salir_cierra(ventana):
     assert not vista.isVisible()
 
 
-def test_agregar_modulo_emite_senal(ventana):
-    vista, _ = ventana
+def test_sidebar_vacio_y_sin_botones_creados_en_codigo(ventana):
+    vista, controlador = ventana
+    assert vista._sidebar_botones == {}
+    assert controlador.modulos_disponibles == {}
+    esperados = {"qbtnTema", "qbtnSalir"}
+    nombres = {b.objectName() for b in vista.findChildren(QPushButton)}
+    assert nombres == esperados
+
+
+def test_sidebar_mapeado_emite_y_marca_activo(ventana):
+    vista, controlador = ventana
+    boton = QPushButton(vista)  # stub solo de prueba
+    boton.setCheckable(True)
+    vista._sidebar_botones = {boton: "demo"}
+    vista.conectar_sidebar()
+    controlador.modulos_disponibles["demo"] = {"titulo": "Demo", "crear": None}
     recibidas = []
     vista.modulo_solicitado.connect(recibidas.append)
-    vista.agregar_modulo("demo", "Demo")
-    vista.findChild(QPushButton, "qbtnModulo_demo").click()
+    boton.click()
     assert recibidas == ["demo"]
+    assert boton.isChecked()
+    vista.actualizar_sidebar(None)
+    assert not boton.isChecked()
