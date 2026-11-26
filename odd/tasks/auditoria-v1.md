@@ -37,4 +37,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: Q09 resuelta: calendario anual obligatorio; sin él, semanas provisionales; precarga art. 74 confirmada por RH (verificar lista contra LFT).
 - 2026-11-26: Q10 parcial: autorizador designado por empresa; autoriza la empresa donde se trabajó la extra (plan RE03).
 - 2026-11-26: usuarios RH + autorizador por empresa; 4 firmas del reporte; colores de V1 conservados (+ morado traslado); corregido dato falso del plan cap. 14 (V1 sí permite modificar checadas).
-- Siguiente: quién elabora el reporte (Q10), Q11–Q15; luego T4.
+- 2026-11-26: Q10 resuelta: auxiliar administrativo elabora; flujo auxiliar → autorizador → RH; Dirección Vo.Bo. (plan §6).
+- Siguiente: Q11–Q15; luego T4.

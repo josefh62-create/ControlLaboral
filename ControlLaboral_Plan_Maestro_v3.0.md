@@ -293,7 +293,12 @@ Adaptar las siguientes entidades lógicas a la estructura existente; no crear ta
 - Usar claves e índices por trabajador/fecha y restricciones de integridad de vigencias. Procesar transaccionalmente; evitar revisiones concurrentes inconsistentes.
 - Conservar fecha local e instante inequívoco, considerando zonas mexicanas y cambios históricos de horario.
 - Control de acceso según perfiles existentes: consulta, revisión, autorización y configuración legal. Registrar modificaciones y exportaciones relevantes.
-- Usuarios iniciales (decisión del propietario, 26/11/2026): dos por empresa, **RH** y **autorizador** (el designado por la empresa, RE03). El autorizador aprueba el tiempo extra y es quien tiene autoridad sobre las checadas faltantes. «Modificar checadas» se implementa siempre como aclaración del módulo de incidencias (cap. 14), nunca como edición o alta de checadas del reloj. Los roles se asignan por empresa y vigencia; el modelo debe admitir más usuarios y roles después.
+- Usuarios iniciales (decisión del propietario, 26/11/2026): tres por empresa, con separación de funciones:
+  1. **Auxiliar administrativo (elabora):** carga los reportes del reloj, captura aclaraciones de checadas faltantes y genera el reporte semanal.
+  2. **Autorizador** (el designado por la empresa, RE03): aprueba o rechaza aclaraciones y tiempo extra; es quien tiene autoridad sobre las checadas faltantes. No puede aprobar lo que él mismo capturó.
+  3. **RH (revisa):** valida y cierra el reporte.
+  - **Dirección (Vo.Bo.):** firma el reporte (§7.4); no requiere usuario propio. En AEI coincide con el autorizador.
+  «Modificar checadas» se implementa siempre como aclaración del módulo de incidencias (cap. 14), nunca como edición o alta de checadas del reloj. Los roles se asignan por empresa y vigencia; el modelo debe admitir más usuarios y roles después.
 - No replicar plantillas biométricas si basta con el identificador del reloj. Proteger datos personales y respaldos; definir retención conforme a obligaciones aplicables, sin inventar un plazo único.
 - Cierres: una corrección posterior genera nueva revisión, no sobrescribe silenciosamente el resultado aprobado. Mostrar original, diferencia y versión recalculada.
 
@@ -332,7 +337,7 @@ En pantalla, estos colores deben conservar legibilidad y contraste en modo claro
 
 Revisar los existentes y ampliar solo si es necesario: revisión diaria/semanal, excepciones, exceso de jornada, límites próximos, horarios incompatibles, checadas originales y ajustes, evidencia individual de inicio/fin de jornada, diferencias de recalculación y exportación de totales para sistemas externos. Conservar contratos de integración; si cambian columnas o unidades, versionar exportación. No incluir cálculo de nómina.
 
-**Firmas del reporte de tiempo extra** (decisión del propietario, 26/11/2026): además de la autorización en el sistema, el reporte lleva cuatro firmas: (1) quien autoriza el tiempo extra, (2) quien lo elaboró, (3) Vo.Bo. de la Dirección y (4) el departamento de RH, que lo revisa. El reporte muestra nombre y cargo de cada firmante y el estado de cada firma; mientras falte alguna, el reporte queda pendiente de validación.
+**Firmas del reporte de tiempo extra** (decisión del propietario, 26/11/2026): además de la autorización en el sistema, el reporte lleva cuatro firmas: (1) quien autoriza el tiempo extra, (2) quien lo elaboró (un auxiliar administrativo encargado, que también lleva otros registros de la empresa), (3) Vo.Bo. de la Dirección y (4) el departamento de RH, que lo revisa. El reporte muestra nombre y cargo de cada firmante y el estado de cada firma; mientras falte alguna, el reporte queda pendiente de validación.
 
 ## 8. Transiciones y casos que requieren decisión
 
