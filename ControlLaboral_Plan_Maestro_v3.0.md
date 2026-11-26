@@ -199,7 +199,7 @@ Si el sistema importa checadas por lotes, las alertas se emiten al revisar/impor
 1. Importar evento con identificador de trabajador/dispositivo, fecha y hora originales, zona horaria, tipo de movimiento si existe, identificador de origen y lote.
 2. Garantizar idempotencia de importación; si el dispositivo no ofrece ID, usar clave compuesta documentada y revisión de colisiones. Conservar evidencia de duplicados reales.
 3. Ordenar cronológicamente por instante, no por orden de importación. Identificar desfases de reloj, eventos futuros y cambios de fecha.
-4. Emparejar entradas y salidas según la semántica del dispositivo. No asumir alternancia perfecta. Marcar registros ambiguos y pedir revisión; no fabricar una salida definitiva.
+4. Emparejar entradas y salidas según la semántica del dispositivo. No asumir alternancia perfecta. Marcar registros ambiguos y pedir revisión; no fabricar una salida definitiva. El emparejamiento se hace sobre la secuencia unificada del trabajador con las checadas de **todos** los relojes, no por reloj: una jornada puede empezar en el reloj de una empresa y terminar en el de otra (p. ej. entrada en CATAB y salida en AEI; decisión del propietario, 26/11/2026). Cada checada conserva su reloj y empresa de origen. Si dos intervalos de relojes distintos se traslapan, alertar y no contar dos veces el mismo minuto.
 5. Asociar jornada lógica y día de inicio a turnos nocturnos, separando segmentos por fecha real cuando sea necesario para vigencias y festivos. Evitar doble contabilización.
 6. Obtener horario, norma y tolerancias vigentes. Si faltan, informar y dejar resultado provisional.
 
@@ -230,7 +230,7 @@ Ejemplo de horario incompatible, 2027: horario acordado 6 × 8 h (48 h) trabajad
 
 ### 5.3 Acumulación semanal y clasificación de extras
 
-- Acumular ordinarias y extraordinarias por trabajador y semana laboral, no por reloj o centro; si existe más de un contrato/régimen, definir alcance con RH.
+- Acumular ordinarias y extraordinarias por trabajador, patrón y semana laboral, sumando las checadas de todos los relojes y centros de trabajo de esa semana contra un solo tope (decisión del propietario, 26/11/2026). La extra se reporta a nombre del patrón; cada segmento conserva la empresa y el reloj donde se generó. Si existe más de un contrato/régimen o más de un patrón simultáneo, definir alcance con RH.
 - Marcar primero cada segmento como dentro de horario o exceso diario; calcular la extra semanal según el criterio vigente (§5.2) y asignarla a los segmentos de exceso. El exceso no asignado como extra es ordinario. Nunca contar el mismo minuto dos veces como ordinario y extra.
 - En casos regulares, asignar cronológicamente el tramo doble hasta el máximo semanal art. 66 y el excedente al tramo triple. Si un segmento cruza umbral, dividirlo exactamente.
 - Evaluar por separado límite diario y número de días de extras art. 66. Si se rebasan antes del umbral semanal, marcar revisión jurídica de clasificación; no ocultar ni declarar automáticamente legal el tramo por ser menor a 9 h.
@@ -454,7 +454,7 @@ Campos propuestos: ID interno, número de empleado, nombre y apellidos, patrón 
 
 Separar el empleado de su identificador externo en el reloj mediante una relación con dispositivo/origen y vigencias. No asumir que el ID del reloj es globalmente único o permanente. Impedir solapamientos ambiguos; si un código se reutiliza, resolverlo conforme a la fecha de la checada. Los registros sin correspondencia quedan pendientes, nunca se asignan por aproximación de nombre. No borrar empleados con dependencias.
 
-El patrón y el centro de trabajo son datos distintos: un trabajador puede checar en el reloj de una empresa y estar dado de alta ante el IMSS con otra (decisión del propietario, 26/11/2026; en V1 corresponde al campo informativo `empresa_base`, cuyo valor inicial común es AEI, la primera empresa del sistema). Los reportes y exportaciones de tiempo extra identifican al patrón responsable; el centro de trabajo indica dónde se generó la checada.
+El patrón y el centro de trabajo son datos distintos: un trabajador puede checar en el reloj de una empresa y estar dado de alta ante el IMSS con otra (decisión del propietario, 26/11/2026; en V1 corresponde al campo informativo `empresa_base`, cuyo valor inicial común es AEI, la primera empresa del sistema). Los reportes y exportaciones de tiempo extra identifican al patrón responsable; el centro de trabajo indica dónde se generó la checada. Un trabajador puede checar en relojes de varias empresas en la misma semana o en la misma jornada: V2 mantiene **un solo registro de empleado** para todas las empresas (a diferencia de V1, que tiene un catálogo por empresa) con un código por reloj y vigencia.
 
 ### 13.2 Migración
 

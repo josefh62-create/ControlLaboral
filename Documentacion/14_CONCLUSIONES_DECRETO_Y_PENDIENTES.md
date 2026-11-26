@@ -52,6 +52,7 @@ Base: texto literal del decreto en `00_FUENTE_LEGAL_DECRETO_2026-05-01.md`. Inte
 - **Q08 (parcial):** los usuarios administran los códigos; en un reloj compartido por varias empresas el código es único. V2 identifica por (reloj, código, vigencia) → empleado y bloquea solapamientos (plan §13.1). Si el reglamento STPS cambia la identificación (CURP/NSS), solo cambia esa relación.
 - **Q08 resuelta (26/11/2026):** «Empresa base» es el patrón IMSS del trabajador (AEI fue la primera empresa del sistema). Un trabajador puede checar en una empresa y estar dado de alta con otra; V2 guarda patrón y centro de trabajo por separado, con vigencia (plan §13.1).
 - **Horario incompatible con el tope (26/11/2026):** si la extra semanal supera la suma de excesos diarios (horario acordado por encima del tope), el remanente se asigna a los últimos minutos programados de la semana y se emite HO03. No se bloquea el cálculo (plan §5.2).
+- **Varias empresas por trabajador (26/11/2026):** un trabajador puede checar en relojes de distintas empresas en la misma semana e incluso en la misma jornada (entrada en CATAB, salida en AEI). V2 usa un solo registro de empleado, empareja checadas sobre la secuencia unificada de todos los relojes y acumula por trabajador, patrón y semana contra un solo tope; cada segmento conserva su empresa y reloj de origen; los traslapes entre relojes generan alerta y no se cuentan doble (plan §5.1 paso 4, §5.3 y §13.1).
 
 ## 6. Preguntas pendientes
 
