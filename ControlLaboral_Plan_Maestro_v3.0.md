@@ -615,6 +615,12 @@ No aprobar la adecuación sin demostrar generación individual, captura de ambas
 
 Permitir la captura administrativa de entradas y salidas completas cuando, por caso fortuito (por ejemplo, interrupción de energía eléctrica), el reloj no pueda registrar los movimientos. También prever falla del dispositivo o imposibilidad comprobada de registro. No insertar, editar ni eliminar movimientos en la fuente original del reloj. Los movimientos complementarios deben participar en el cálculo derivado con su procedencia explícita, y no presentarse como registros biométricos o del dispositivo.
 
+**Caso aprobado: reparto de madrugada (BATAB; Q11, decisión del propietario, 26/11/2026).** El personal de reparto inicia a las 2:00 a. m. fuera de la planta y no puede checar hasta llegar. No es un caso fortuito sino recurrente: la entrada real se registra como aclaración (cap. 14) con hora declarada y evidencia (p. ej. bitácora de ruta), capturada por el auxiliar y aprobada por el autorizador; nunca se modifica la checada del reloj. Se marca con el color azul de aclaración (§7.3). Implicaciones a validar:
+- Una jornada que inicia a las 2:00 tiene al menos 4 h dentro del periodo nocturno; según la lectura del art. 60 LFT (no reformado y no transcrito en `Documentacion/00`), podría clasificarse como **nocturna** (tope diario de 7 h, art. 61) y no diurna. Requiere validación del asesor laboral antes de asignar su horario.
+- El receptor de checadas móviles previsto (Supabase) es la solución de fondo para este grupo; mientras no exista, aplica la aclaración.
+
+**Alimentos por tiempo extra (BATAB; Q11, aprobado 26/11/2026).** Marcar por día a qué alimentos (desayuno, almuerzo, cena) tiene derecho el trabajador, solo si ese día generó tiempo extra. Las reglas no son fijas: se definen **por configuración**, por empresa y con vigencia, solo donde apliquen (p. ej. hora de inicio o fin de la extra, minutos mínimos de extra). Sin regla configurada no se marca nada. V2 solo registra el derecho y lo muestra en el reporte; no calcula importes (sin cálculo de nómina, §7.4).
+
 ### 17.2 Flujo de captura y validación
 
 1. Registrar la contingencia: folio, centro de trabajo, reloj afectado, inicio y fin (o estado abierto), motivo, descripción, responsable y evidencia disponible. Permitir documentar una contingencia común a varios empleados.

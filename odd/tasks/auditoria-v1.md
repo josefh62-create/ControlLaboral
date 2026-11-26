@@ -38,4 +38,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: Q10 parcial: autorizador designado por empresa; autoriza la empresa donde se trabajó la extra (plan RE03).
 - 2026-11-26: usuarios RH + autorizador por empresa; 4 firmas del reporte; colores de V1 conservados (+ morado traslado); corregido dato falso del plan cap. 14 (V1 sí permite modificar checadas).
 - 2026-11-26: Q10 resuelta: auxiliar administrativo elabora; flujo auxiliar → autorizador → RH; Dirección Vo.Bo. (plan §6).
-- Siguiente: Q11–Q15; luego T4.
+- 2026-11-26: Q11 resuelta: reparto 2:00 → aclaración (posible jornada nocturna, validar); alimentos por configuración (plan cap. 17.1).
+- Siguiente: Q12–Q15; luego T4.
