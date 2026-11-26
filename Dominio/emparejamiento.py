@@ -9,7 +9,9 @@ y principio P-30: jamas se fabrica una hora de salida):
 - No se asume alternancia perfecta. Sin `sentido` declarado, el rol sale de la
   alternancia (la siguiente checada cierra lo abierto). Con `sentido`, este manda.
 - `impar`: checada sin contraparte (entrada sin salida o salida sin entrada).
-- `ambigua`: la secuencia contradice el sentido declarado. Lo dudoso no se cuenta.
+- `ambigua`: la secuencia contradice el sentido declarado, o hay checadas cercanas
+  `cercana_sin_resolver` (no se adivina cual sobra; los intervalos se conservan y la
+  incidencia referencia las checadas afectadas). Lo dudoso no se cuenta.
 - `intervalo_excedido`: un par supera el maximo versionado `INTERVALO_MAX_S` (inicial
   16 h, decision del propietario 26/11/2026, configurable por empresa; se usa la de la
   checada de ENTRADA). No se cuenta y conserva ambos extremos. Recuperacion: sin
@@ -32,6 +34,7 @@ y principio P-30: jamas se fabrica una hora de salida):
 from dataclasses import dataclass
 
 from Dominio.checadas import (
+    CERCANA_SIN_RESOLVER,
     ENTRADA,
     FUTURA,
     POSIBLE_DUPLICADO,
@@ -144,6 +147,18 @@ def _emparejar_secuencia(usables, versiones):
     return intervalos, incidencias
 
 
+def _cercanas_sin_resolver(marcadas) -> list[Incidencia]:
+    """Una incidencia `ambigua` por (reloj, dia) con checadas cercanas sin resolver."""
+    grupos: dict[tuple[str, object], list[Checada]] = {}
+    for cm in marcadas:
+        if CERCANA_SIN_RESOLVER in cm.marcas and not (cm.marcas & _EXCLUIDAS):
+            grupos.setdefault((cm.checada.reloj, cm.checada.fecha_local), []).append(cm.checada)
+    return [
+        _incidencia(AMBIGUA, cs, "checadas cercanas sin resolver; revisar cual es duplicada")
+        for cs in grupos.values()
+    ]
+
+
 def _traslapes(intervalos) -> list[Incidencia]:
     incidencias = []
     for k, b in enumerate(intervalos):
@@ -214,6 +229,7 @@ def emparejar(marcadas, versiones) -> ResultadoEmparejamiento:
     usables = ordenar_checadas(cm.checada for cm in marcadas if not (cm.marcas & _EXCLUIDAS))
     intervalos, incidencias = _emparejar_secuencia(usables, versiones)
     intervalos.sort(key=_clave_intervalo)
+    incidencias += _cercanas_sin_resolver(marcadas)
     incidencias += _traslapes(intervalos)
     traslados, excedidos = _traslados(intervalos, versiones)
     todos = sorted(intervalos + traslados, key=_clave_intervalo)

@@ -9,6 +9,9 @@ Convenciones:
   de epoch UTC (doc. 03 8.4). Las fracciones de segundo se truncan.
 - Un duplicado se evalua solo dentro del MISMO reloj y con el mismo sentido declarado:
   salida en un reloj y entrada en otro a pocos minutos es un traslado, no un duplicado.
+- Dos checadas dentro de la ventana que NO se marcan duplicadas (regla de paridad) se
+  marcan ambas `cercana_sin_resolver`: no se adivina cual sobra y `emparejar` emite una
+  incidencia `ambigua`; nunca se pierde tiempo en silencio (plan 5.1-4, RE05).
 - La ventana (por empresa de la checada) se mide contra la ultima checada CONSERVADA
   (sin arrastre en cadena).
 - Sin sentido declarado, una checada cercana solo se marca duplicada si quitarla deja
@@ -28,6 +31,7 @@ from Dominio.normatividad import VENTANA_DUPLICADOS_S, resolver_vigente
 POSIBLE_DUPLICADO = "posible_duplicado"
 FUTURA = "futura"
 DESFASE = "desfase"
+CERCANA_SIN_RESOLVER = "cercana_sin_resolver"
 
 ENTRADA = "entrada"
 SALIDA = "salida"
@@ -114,34 +118,42 @@ def marcar_checadas(
         _exigir_zona(instante_referencia, "instante_referencia")
         referencia_s = _segundos(instante_referencia)
     ordenadas = ordenar_checadas(checadas)
-    ultima_conservada: dict[tuple[str, str | None], int] = {}
+    ultima_conservada: dict[tuple[str, str | None], tuple[int, int]] = {}  # -> (instante, pos)
     definitivos: set[int] = set()  # posiciones en `ordenadas`
     tentativos: list[int] = []
+    anclas: dict[int, int] = {}  # candidato -> posicion de la checada con la que choca
     for pos, c in enumerate(ordenadas):
         clave = (c.reloj, c.sentido)
         ventana = resolver_vigente(
             versiones, VENTANA_DUPLICADOS_S, c.fecha_local, ORIGEN_PATRONAL, c.empresa
         ).valor
         previa = ultima_conservada.get(clave)
-        if previa is None or c.instante_s - previa > ventana:
-            ultima_conservada[clave] = c.instante_s
-        elif c.sentido is not None or c.instante_s == previa:
+        if previa is None or c.instante_s - previa[0] > ventana:
+            ultima_conservada[clave] = (c.instante_s, pos)
+        elif c.sentido is not None or c.instante_s == previa[0]:
             definitivos.add(pos)  # mismo rol declarado, o repeticion exacta
         else:
             tentativos.append(pos)
+            anclas[pos] = previa[1]
     # Sin sentido declarado, solo es duplicado si quitarlo deja consistente la paridad
     # entrada/salida del dia (si no, podria ser la salida/regreso de una comida). Los
     # candidatos de cada fecha se aceptan juntos o ninguno (conservador).
+    sin_resolver: set[int] = set()
     for fecha in {ordenadas[pos].fecha_local for pos in tentativos}:
         del_dia = [p for p, c in enumerate(ordenadas) if c.fecha_local == fecha and p not in definitivos]
         candidatos = [p for p in tentativos if ordenadas[p].fecha_local == fecha]
         if (len(del_dia) - len(candidatos)) % 2 == 0:
             definitivos.update(candidatos)
+        else:  # no se adivina cual sobra: ambas quedan para revision, nunca en silencio
+            sin_resolver.update(candidatos)
+            sin_resolver.update(anclas[p] for p in candidatos)
     resultado = []
     for pos, c in enumerate(ordenadas):
         marcas = set()
         if pos in definitivos:
             marcas.add(POSIBLE_DUPLICADO)
+        if pos in sin_resolver:
+            marcas.add(CERCANA_SIN_RESOLVER)
         if instante_referencia is not None and c.instante_s > referencia_s:
             marcas.add(FUTURA)
         if (

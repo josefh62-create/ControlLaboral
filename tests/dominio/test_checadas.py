@@ -7,6 +7,7 @@ import pytest
 
 from Dominio import normatividad as n
 from Dominio.checadas import (
+    CERCANA_SIN_RESOLVER,
     DESFASE,
     FUTURA,
     POSIBLE_DUPLICADO,
@@ -210,7 +211,7 @@ def test_una_checada_puede_tener_varias_marcas():
 
 def test_b2_salida_y_regreso_de_comida_en_el_mismo_reloj_no_son_duplicado():
     res = marcar_checadas([ck("a", 8), ck("b", 13), ck("c", 13, 30), ck("d", 18)], VERS)
-    assert all(cm.marcas == frozenset() for cm in res)
+    assert all(POSIBLE_DUPLICADO not in cm.marcas for cm in res)
 
 
 def test_b2_duplicado_real_de_2_minutos_se_marca():
@@ -227,7 +228,7 @@ def test_b2_dos_duplicados_reales_en_el_dia_se_marcan_juntos():
 
 def test_b2_dos_checadas_solas_cercanas_no_se_marcan_porque_romperia_la_paridad():
     res = marcar_checadas([ck("a", 8), ck("b", 8, 20)], VERS)
-    assert all(cm.marcas == frozenset() for cm in res)
+    assert all(POSIBLE_DUPLICADO not in cm.marcas for cm in res)
 
 
 def test_b2_misma_marca_de_tiempo_exacta_siempre_es_duplicado_aunque_cambie_la_paridad():
@@ -238,7 +239,7 @@ def test_b2_misma_marca_de_tiempo_exacta_siempre_es_duplicado_aunque_cambie_la_p
 
 def test_b2_la_paridad_cuenta_las_checadas_del_dia_de_todos_los_relojes():
     xs = [ck("a", 8, **dict(reloj="R-CATAB", empresa="CATAB")), ck("b", 13), ck("c", 13, 30), ck("d", 18)]
-    assert all(cm.marcas == frozenset() for cm in marcar_checadas(xs, VERS))
+    assert all(POSIBLE_DUPLICADO not in cm.marcas for cm in marcar_checadas(xs, VERS))
 
 
 def test_ventana_de_duplicados_por_empresa():
@@ -256,3 +257,22 @@ def test_ventana_de_duplicados_por_empresa():
     assert all(cm.marcas == frozenset() for cm in marcar_checadas(cks, vs))  # 20 min > 5 min
     aei = [ck("a", 8), ck("b", 8, 20), ck("c", 17)]
     assert marcas_de(marcar_checadas(aei, vs))["b"] == frozenset({POSIBLE_DUPLICADO})
+
+
+# --- Cercanas sin resolver: nunca en silencio (plan 5.1-4, RE05) ---------------------
+
+def test_cercanas_no_duplicado_se_marcan_ambas_para_revision():
+    # 08:00, 08:02, 12:00, 17:00: no se sabe cual es el duplicado
+    m = marcas_de(marcar_checadas([ck("a", 8), ck("b", 8, 2), ck("c", 12), ck("d", 17)], VERS))
+    assert m == {
+        "a": frozenset({CERCANA_SIN_RESOLVER}),
+        "b": frozenset({CERCANA_SIN_RESOLVER}),
+        "c": frozenset(),
+        "d": frozenset(),
+    }
+
+
+def test_cercanas_de_comida_tambien_se_marcan_para_revision_sin_ser_duplicado():
+    m = marcas_de(marcar_checadas([ck("a", 8), ck("b", 13), ck("c", 13, 30), ck("d", 18)], VERS))
+    assert m["b"] == m["c"] == frozenset({CERCANA_SIN_RESOLVER})
+    assert m["a"] == m["d"] == frozenset()

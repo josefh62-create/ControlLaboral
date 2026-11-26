@@ -335,3 +335,24 @@ def test_incidencias_e_intervalos_salen_ordenados_por_instante():
                ck("a", 8), ck("b", 17)])
     assert [i.desde.id for i in res.intervalos] == ["a"]
     assert [inc.checadas[0].id for inc in res.incidencias] == ["y", "z"]
+
+
+# --- Cercanas sin resolver: el motor no calla ------------------------------------------
+
+def test_cercanas_08_0802_12_17_dan_incidencia_y_conservan_los_intervalos():
+    res = emp([ck("a", 8), ck("b", 8, 2), ck("c", 12), ck("d", 17)])
+    assert duraciones(res) == [2 * 60, 5 * 3600]  # el emparejamiento no inventa cual sobra
+    assert tipos(res) == [AMBIGUA]
+    assert [c.id for c in res.incidencias[0].checadas] == ["a", "b"]
+
+
+def test_comida_de_30_min_mismo_reloj_da_dos_intervalos_y_queda_para_revision():
+    res = emp([ck("a", 8), ck("b", 13), ck("c", 13, 30), ck("d", 18)])
+    assert duraciones(res) == [5 * 3600, 4 * 3600 + 30 * 60]
+    assert tipos(res) == [AMBIGUA]
+    assert [c.id for c in res.incidencias[0].checadas] == ["b", "c"]
+
+
+def test_duplicado_real_no_genera_incidencia_de_cercania():
+    res = emp([ck("a", 8), ck("b", 8, 2), ck("c", 17)])
+    assert res.incidencias == ()
