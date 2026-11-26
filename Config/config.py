@@ -44,7 +44,7 @@ def resolver_carpeta_datos(
 
     explicita = entorno.get(VARIABLE_DATOS)
     if explicita:
-        return Path(explicita)
+        return Path(explicita).expanduser().resolve()
 
     local = entorno.get("LOCALAPPDATA")
     if local:

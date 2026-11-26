@@ -3,7 +3,7 @@ import sqlite3
 import pytest
 
 from Config.config import VERSION_ESQUEMA_SOPORTADA
-from Database.conexion_sqlite import abrir_conexion
+from Database.conexion_sqlite import BUSY_TIMEOUT_MS, abrir_conexion
 from Database.crear_bd import ErrorEsquema, _aplicar_migraciones, crear_o_actualizar_bd
 from Database.unidad_trabajo import UnidadTrabajo
 
@@ -47,7 +47,7 @@ def test_pragmas_activos(tmp_path):
         assert cn.execute("PRAGMA foreign_keys").fetchone()[0] == 1
         assert cn.execute("PRAGMA journal_mode").fetchone()[0] == "wal"
         assert cn.execute("PRAGMA synchronous").fetchone()[0] == 2
-        assert cn.execute("PRAGMA busy_timeout").fetchone()[0] > 0
+        assert cn.execute("PRAGMA busy_timeout").fetchone()[0] == BUSY_TIMEOUT_MS
     finally:
         cn.close()
 
@@ -97,4 +97,46 @@ def test_migracion_fallida_no_deja_cambios_de_esa_migracion(tmp_path):
         _aplicar_migraciones(cn, carpeta)
     tablas = {f[0] for f in cn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     assert "a" in tablas and "b" not in tablas
+    nombres = {f[0] for f in cn.execute("SELECT nombre FROM esquema_migracion")}
+    assert nombres == {"0001_ok"}
+    assert cn.execute("PRAGMA user_version").fetchone()[0] == 1
+    cn.close()
+
+
+def test_carrera_entre_procesos_no_falla(tmp_path, monkeypatch):
+    from Database import crear_bd
+
+    ruta = tmp_path / "t.db"
+    crear_bd.crear_o_actualizar_bd(ruta)
+    real = crear_bd._checksums_aplicados
+    llamadas = []
+
+    def obsoleta(cn):
+        llamadas.append(1)
+        return {} if len(llamadas) == 1 else real(cn)
+
+    monkeypatch.setattr(crear_bd, "_checksums_aplicados", obsoleta)
+    cn = abrir_conexion(ruta)
+    assert crear_bd._aplicar_migraciones(cn) == []
+    assert cn.execute("PRAGMA user_version").fetchone()[0] == VERSION_ESQUEMA_SOPORTADA
+    cn.close()
+
+
+def test_checksum_alterado_se_rechaza(tmp_path):
+    ruta = tmp_path / "t.db"
+    crear_o_actualizar_bd(ruta)
+    cn = sqlite3.connect(ruta)
+    cn.execute("UPDATE esquema_migracion SET checksum = 'x'")
+    cn.commit()
+    cn.close()
+    with pytest.raises(ErrorEsquema, match="0001_esquema_base.sql"):
+        crear_o_actualizar_bd(ruta)
+
+
+def test_rollback_no_enmascara_la_excepcion_original(tmp_path):
+    cn = abrir_conexion(tmp_path / "t.db")
+    with pytest.raises(ValueError):
+        with UnidadTrabajo(cn) as u:
+            u.execute("COMMIT")  # cierra la transaccion: el ROLLBACK fallaria
+            raise ValueError("original")
     cn.close()

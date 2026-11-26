@@ -51,13 +51,19 @@ def _sentencias(sql: str) -> list[str]:
     return partes
 
 
-def _ya_aplicadas(conexion: sqlite3.Connection) -> set[str]:
+def _checksums_aplicados(conexion: sqlite3.Connection) -> dict[str, str]:
+    """Migraciones ya registradas: {nombre: checksum}."""
     existe = conexion.execute(
         "SELECT 1 FROM sqlite_master WHERE type='table' AND name='esquema_migracion'"
     ).fetchone()
     if not existe:
-        return set()
-    return {f["nombre"] for f in conexion.execute("SELECT nombre FROM esquema_migracion")}
+        return {}
+    filas = conexion.execute("SELECT nombre, checksum FROM esquema_migracion")
+    return {f["nombre"]: f["checksum"] for f in filas}
+
+
+def _checksum(sql: str) -> str:
+    return hashlib.sha256(sql.encode("utf-8")).hexdigest()
 
 
 def _aplicar_migraciones(
@@ -72,14 +78,22 @@ def _aplicar_migraciones(
             "Actualice la aplicacion; la base no se modifico."
         )
 
-    aplicadas = _ya_aplicadas(conexion)
+    aplicadas = _checksums_aplicados(conexion)
     nuevas = []
     for numero, nombre, archivo in _migraciones(carpeta):
-        if nombre in aplicadas:
-            continue
         sql = archivo.read_text(encoding="utf-8")
-        checksum = hashlib.sha256(sql.encode("utf-8")).hexdigest()
+        checksum = _checksum(sql)
+        if nombre in aplicadas:
+            if aplicadas[nombre] != checksum:
+                raise ErrorEsquema(
+                    f"La migracion {archivo.name} ya aplicada fue modificada "
+                    "(el checksum no coincide). No se modifico la base."
+                )
+            continue
         with UnidadTrabajo(conexion) as cn:
+            # Relectura dentro de la transaccion: otro proceso pudo aplicarla antes.
+            if nombre in _checksums_aplicados(cn):
+                continue
             for sentencia in _sentencias(sql):
                 cn.execute(sentencia)
             cn.execute(

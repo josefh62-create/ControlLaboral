@@ -8,6 +8,7 @@ backups/
 *.db
 *.db-wal
 *.db-shm
+*.db-journal
 
 # Python / pruebas
 __pycache__/

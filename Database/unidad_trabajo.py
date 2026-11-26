@@ -25,8 +25,16 @@ class UnidadTrabajo:
             try:
                 self._conexion.execute("COMMIT")
             except Exception:
-                self._conexion.execute("ROLLBACK")
+                self._revertir()
                 raise
         else:
-            self._conexion.execute("ROLLBACK")
+            self._revertir()  # la excepcion original sigue propagandose
         return False
+
+    def _revertir(self) -> None:
+        # SQLite puede haber revertido solo; no enmascarar el error original.
+        if self._conexion.in_transaction:
+            try:
+                self._conexion.execute("ROLLBACK")
+            except sqlite3.Error:
+                pass

@@ -25,3 +25,8 @@ def test_desarrollo_usa_data_del_repo(tmp_path):
 def test_ruta_bd_agrega_nombre_de_archivo(tmp_path):
     ruta = config.ruta_bd({"CONTROLLABORAL_DATA": str(tmp_path)})
     assert ruta == Path(tmp_path) / config.NOMBRE_BD
+
+
+def test_variable_relativa_se_vuelve_absoluta():
+    ruta = config.resolver_carpeta_datos({"CONTROLLABORAL_DATA": "datos_rel"})
+    assert ruta.is_absolute()
