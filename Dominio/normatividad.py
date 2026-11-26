@@ -28,17 +28,33 @@ class ParametroAmbiguo(ValueError):
 
 
 def resolver_vigente(
-    versiones, clave: str, fecha_trabajada: date, origen: str = ORIGEN_LEGAL
+    versiones,
+    clave: str,
+    fecha_trabajada: date,
+    origen: str = ORIGEN_LEGAL,
+    empresa: str | None = None,
 ) -> VersionParametro:
     """Exactamente una version de `clave`/`origen` cuya vigencia contiene la fecha.
 
     La fecha es la fecha TRABAJADA del segmento, no la de consulta (P-36, P-40, P-50).
+
+    Alcance por empresa (decision del propietario 26/11/2026): solo para origen
+    patronal. Si existe alguna version de la empresa vigente en la fecha, se resuelve
+    entre ellas; si no, entre las generales (`empresa=None`). La ambiguedad se evalua
+    dentro de cada alcance. Los parametros legales son globales: se ignoran tanto el
+    argumento `empresa` como las versiones legales que traigan empresa.
     """
-    candidatas = [
+    vigentes = [
         v
         for v in versiones
         if v.clave == clave and v.origen == origen and v.vigencia.contiene(fecha_trabajada)
     ]
+    propias = (
+        [v for v in vigentes if v.empresa == empresa]
+        if empresa is not None and origen != ORIGEN_LEGAL
+        else []
+    )
+    candidatas = propias or [v for v in vigentes if v.empresa is None]
     if not candidatas:
         raise FaltaParametro(clave, fecha_trabajada)
     if len(candidatas) > 1:
@@ -55,10 +71,11 @@ class ProblemaVigencia:
     origen: str
     desde: date
     hasta: date
+    empresa: str | None = None
 
 
 def _problemas_de_un_grupo(grupo: list[VersionParametro]) -> list[ProblemaVigencia]:
-    clave, origen = grupo[0].clave, grupo[0].origen
+    clave, origen, empresa = grupo[0].clave, grupo[0].origen, grupo[0].empresa
     grupo = sorted(grupo, key=lambda v: v.vigencia.desde)
     problemas = []
     for i, a in enumerate(grupo):
@@ -68,22 +85,24 @@ def _problemas_de_un_grupo(grupo: list[VersionParametro]) -> list[ProblemaVigenc
                 finales = [x for x in (fin, b.vigencia.hasta) if x is not None]
                 termina = min(finales) if finales else date.max  # ambas abiertas: sin fin
                 problemas.append(
-                    ProblemaVigencia("traslape", clave, origen, b.vigencia.desde, termina)
+                    ProblemaVigencia("traslape", clave, origen, b.vigencia.desde, termina, empresa)
                 )
     alcance = grupo[0].vigencia.hasta
     for v in grupo[1:]:
         if alcance is not None and alcance < v.vigencia.desde:
-            problemas.append(ProblemaVigencia("hueco", clave, origen, alcance, v.vigencia.desde))
+            problemas.append(
+                ProblemaVigencia("hueco", clave, origen, alcance, v.vigencia.desde, empresa)
+            )
         fin = v.vigencia.hasta
         alcance = None if (alcance is None or fin is None) else max(alcance, fin)
     return problemas
 
 
 def validar_versiones(versiones) -> tuple[ProblemaVigencia, ...]:
-    """Detecta traslapes y huecos por (clave, origen); no altera la lista (NL02)."""
-    grupos: dict[tuple[str, str], list[VersionParametro]] = {}
+    """Detecta traslapes y huecos por (clave, origen, empresa); no altera la lista (NL02)."""
+    grupos: dict[tuple[str, str, str], list[VersionParametro]] = {}
     for v in versiones:
-        grupos.setdefault((v.clave, v.origen), []).append(v)
+        grupos.setdefault((v.clave, v.origen, v.empresa or ""), []).append(v)
     problemas = []
     for clave_origen in sorted(grupos):
         problemas += _problemas_de_un_grupo(grupos[clave_origen])
@@ -122,6 +141,7 @@ EDAD_MAYORIA = "edad_mayoria"
 # Politica patronal de checadas (origen "patronal", NL05): no son limites legales.
 TRASLADO_MAX_S = "traslado_max_s"
 VENTANA_DUPLICADOS_S = "ventana_duplicados_s"
+INTERVALO_MAX_S = "intervalo_max_s"
 
 # Alerta que dispara rebasar cada limite (plan 4.4); art. 66 y 68 distintos (NL06).
 ALERTA_POR_LIMITE = {
@@ -211,6 +231,15 @@ SEMILLA_PATRONAL: tuple[VersionParametro, ...] = (
         _M(60),
         Vigencia(_D2026),
         "Decision del propietario 26/11/2026 (plan 5.1-4); art. 58 LFT, validar con asesor",
+        ORIGEN_PATRONAL,
+    ),
+    # Decision del propietario 26/11/2026: un intervalo entrada-salida mayor a 16 h no se
+    # cuenta (queda para revision); configurable por empresa con una version propia.
+    VersionParametro(
+        INTERVALO_MAX_S,
+        _H(16),
+        Vigencia(_D2026),
+        "Decision del propietario 26/11/2026 (intervalo maximo, configurable por empresa)",
         ORIGEN_PATRONAL,
     ),
     # Valor documentado de V1 (R006: descartaba checadas a <= 30 min); doc. 03 Q-D lo

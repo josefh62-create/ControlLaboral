@@ -16,7 +16,9 @@ from Dominio.emparejamiento import (
     IMPAR,
     NORMAL,
     TRASLADO,
+    INTERVALO_EXCEDIDO,
     TRASLADO_EXCEDIDO,
+    TRASLADO_PENDIENTE_Q_F,
     TRASLAPE,
     emparejar,
     tiempo_sin_traslape,
@@ -113,17 +115,74 @@ def test_sentido_declarado_manda_sobre_la_alternancia():
     assert res.incidencias == ()
 
 
-def test_intervalo_mas_largo_que_el_limite_se_marca_ambigua_y_no_se_cuenta():
+def test_intervalo_mas_largo_que_el_maximo_se_marca_y_no_se_cuenta():
     # falta de salida a media secuencia desplazaria todo el emparejamiento
-    res = emp([ck("a", 8), ck("b", 8, dia=5), ck("c", 17, dia=5)], limite_intervalo_s=16 * 3600)
+    res = emp([ck("a", 8), ck("b", 8, dia=5), ck("c", 17, dia=5)])
     assert duraciones(res) == [9 * 3600]
-    assert tipos(res) == [AMBIGUA]
+    assert tipos(res) == [INTERVALO_EXCEDIDO]
     assert {c.id for c in res.incidencias[0].checadas} == {"a", "b"}
 
 
-def test_sin_limite_no_se_adivina_el_corte():
-    res = emp([ck("a", 8), ck("b", 8, dia=5), ck("c", 17, dia=5)])
-    assert duraciones(res) == [24 * 3600]  # alternancia pura; ver hueco de decision
+def test_b1_falta_de_salida_el_dia_1_no_desplaza_el_resto_de_la_semana():
+    # sin sentido: d1 entrada sin salida; d2 y d3 completos
+    res = emp([ck("a", 8), ck("b", 8, dia=5), ck("c", 17, dia=5),
+               ck("d", 8, dia=6), ck("e", 17, dia=6)])
+    assert [(i.desde.id, i.hasta.id) for i in res.intervalos] == [("b", "c"), ("d", "e")]
+    assert duraciones(res) == [9 * 3600, 9 * 3600]
+    assert tipos(res) == [INTERVALO_EXCEDIDO]
+    assert {c.id for c in res.incidencias[0].checadas} == {"a", "b"}
+
+
+def test_b1_con_sentido_declarado_tambien_se_marca_y_no_se_cuenta():
+    res = emp([ck("a", 8, sentido="entrada"), ck("b", 8, dia=5, sentido="salida")])
+    assert res.intervalos == ()
+    assert tipos(res) == [INTERVALO_EXCEDIDO]
+
+
+def test_b1_exactamente_16_h_se_cuenta():
+    res = emp([ck("a", 6), ck("b", 22)])
+    assert duraciones(res) == [16 * 3600] and res.incidencias == ()
+
+
+def _pol(clave, valor, empresa):
+    return VersionParametro(clave, valor, Vigencia(date(2026, 1, 1)), "prueba",
+                            ORIGEN_PATRONAL, empresa)
+
+
+def test_b1_el_maximo_de_intervalo_es_por_empresa_de_la_entrada():
+    vs = (*VERS, _pol(n.INTERVALO_MAX_S, 10 * 3600, "CATAB"))
+    ok_aei = emp([ck("a", 6, **AEI), ck("b", 20, **AEI)], vs)  # 14 h, AEI usa 16 h
+    assert duraciones(ok_aei) == [14 * 3600]
+    en_catab = emp([ck("a", 6, **CATAB), ck("b", 20, **CATAB)], vs)  # 14 h > 10 h
+    # la salida reinterpretada como nueva entrada queda impar (recuperacion)
+    assert en_catab.intervalos == () and tipos(en_catab) == [IMPAR, INTERVALO_EXCEDIDO]
+    # cruzado: manda la empresa de la ENTRADA
+    cruzado = emp([ck("a", 6, **AEI), ck("b", 20, **CATAB)], vs)
+    assert duraciones(cruzado) == [14 * 3600]
+
+
+def test_b1_sin_politica_de_intervalo_se_propaga_falta_parametro():
+    sin = tuple(v for v in VERS if v.clave != n.INTERVALO_MAX_S)
+    with pytest.raises(n.FaltaParametro):
+        emp([ck("a", 8), ck("b", 17)], sin)
+
+
+def test_b1_el_traslado_usa_el_maximo_de_la_empresa_destino():
+    vs = (*VERS, _pol(n.TRASLADO_MAX_S, 30 * 60, "AEI"))
+    # CATAB -> AEI (destino AEI, 30 min): 45 min excede
+    a = emp([ck("a", 8, **CATAB), ck("b", 12, **CATAB), ck("c", 12, 45, **AEI), ck("d", 17, **AEI)], vs)
+    assert tipos(a) == [TRASLADO_EXCEDIDO]
+    # AEI -> CATAB (destino CATAB, usa el general de 60 min): 45 min cuenta
+    b = emp([ck("a", 8, **AEI), ck("b", 12, **AEI), ck("c", 12, 45, **CATAB), ck("d", 17, **CATAB)], vs)
+    assert duraciones(b, TRASLADO) == [45 * 60] and tipos(b) == []
+
+
+def test_n1_hueco_entre_empresas_que_cruza_medianoche_dentro_del_maximo_queda_pendiente():
+    res = emp([ck("a", 20, **CATAB), ck("b", 23, 30, **CATAB),
+               ck("c", 0, 10, dia=5, **AEI), ck("d", 4, dia=5, **AEI)])
+    assert duraciones(res, TRASLADO) == []
+    assert tipos(res) == [TRASLADO_PENDIENTE_Q_F]
+    assert [c.id for c in res.incidencias[0].checadas] == ["b", "c"]
 
 
 # --- Duplicados y futuras no entran al emparejamiento (P-31 parte pura) ---------
@@ -228,11 +287,11 @@ def test_p45_traslado_que_excede_el_maximo_queda_pendiente_y_no_se_cuenta():
     assert len(res.intervalos) == 2
 
 
-def test_p45_hueco_entre_empresas_de_dias_distintos_no_es_traslado():
-    res = emp([ck("a", 20, **CATAB), ck("b", 23, 30, **CATAB),
-               ck("c", 0, 10, dia=5, **AEI), ck("d", 4, dia=5, **AEI)])
+def test_p45_salida_de_una_empresa_y_entrada_de_otra_al_dia_siguiente_no_es_traslado():
+    res = emp([ck("a", 8, **CATAB), ck("b", 17, **CATAB),
+               ck("c", 8, dia=5, **AEI), ck("d", 17, dia=5, **AEI)])
     assert duraciones(res, TRASLADO) == []
-    assert tipos(res) == []  # otro dia: no hay traslado ni pendiente (hueco de decision Q-F)
+    assert tipos(res) == []  # hueco de 15 h: ni traslado ni pendiente
 
 
 def test_p45_el_maximo_viene_de_la_politica_versionada():

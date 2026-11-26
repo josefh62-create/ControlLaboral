@@ -9,7 +9,12 @@ Convenciones:
   de epoch UTC (doc. 03 8.4). Las fracciones de segundo se truncan.
 - Un duplicado se evalua solo dentro del MISMO reloj y con el mismo sentido declarado:
   salida en un reloj y entrada en otro a pocos minutos es un traslado, no un duplicado.
-- La ventana se mide contra la ultima checada CONSERVADA (sin arrastre en cadena).
+- La ventana (por empresa de la checada) se mide contra la ultima checada CONSERVADA
+  (sin arrastre en cadena).
+- Sin sentido declarado, una checada cercana solo se marca duplicada si quitarla deja
+  consistente la paridad entrada/salida del dia (si no, puede ser la salida y regreso
+  de una comida y marcarla romperia el emparejamiento); la repeticion exacta del mismo
+  instante en el mismo reloj siempre es duplicado (lote importado dos veces, P-31).
 - `futura` y `desfase` solo se marcan si quien llama aporta lo necesario: el dominio
   no tiene reloj propio ni umbral documentado de desfase.
 """
@@ -110,18 +115,33 @@ def marcar_checadas(
         referencia_s = _segundos(instante_referencia)
     ordenadas = ordenar_checadas(checadas)
     ultima_conservada: dict[tuple[str, str | None], int] = {}
-    resultado = []
-    for c in ordenadas:
-        marcas = set()
+    definitivos: set[int] = set()  # posiciones en `ordenadas`
+    tentativos: list[int] = []
+    for pos, c in enumerate(ordenadas):
         clave = (c.reloj, c.sentido)
         ventana = resolver_vigente(
-            versiones, VENTANA_DUPLICADOS_S, c.fecha_local, ORIGEN_PATRONAL
+            versiones, VENTANA_DUPLICADOS_S, c.fecha_local, ORIGEN_PATRONAL, c.empresa
         ).valor
         previa = ultima_conservada.get(clave)
-        if previa is not None and c.instante_s - previa <= ventana:
-            marcas.add(POSIBLE_DUPLICADO)
-        else:
+        if previa is None or c.instante_s - previa > ventana:
             ultima_conservada[clave] = c.instante_s
+        elif c.sentido is not None or c.instante_s == previa:
+            definitivos.add(pos)  # mismo rol declarado, o repeticion exacta
+        else:
+            tentativos.append(pos)
+    # Sin sentido declarado, solo es duplicado si quitarlo deja consistente la paridad
+    # entrada/salida del dia (si no, podria ser la salida/regreso de una comida). Los
+    # candidatos de cada fecha se aceptan juntos o ninguno (conservador).
+    for fecha in {ordenadas[pos].fecha_local for pos in tentativos}:
+        del_dia = [p for p, c in enumerate(ordenadas) if c.fecha_local == fecha and p not in definitivos]
+        candidatos = [p for p in tentativos if ordenadas[p].fecha_local == fecha]
+        if (len(del_dia) - len(candidatos)) % 2 == 0:
+            definitivos.update(candidatos)
+    resultado = []
+    for pos, c in enumerate(ordenadas):
+        marcas = set()
+        if pos in definitivos:
+            marcas.add(POSIBLE_DUPLICADO)
         if instante_referencia is not None and c.instante_s > referencia_s:
             marcas.add(FUTURA)
         if (

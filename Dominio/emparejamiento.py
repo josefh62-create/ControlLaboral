@@ -9,15 +9,22 @@ y principio P-30: jamas se fabrica una hora de salida):
 - No se asume alternancia perfecta. Sin `sentido` declarado, el rol sale de la
   alternancia (la siguiente checada cierra lo abierto). Con `sentido`, este manda.
 - `impar`: checada sin contraparte (entrada sin salida o salida sin entrada).
-- `ambigua`: la secuencia contradice el sentido declarado, o el intervalo supera el
-  limite opcional `limite_intervalo_s` (que protege contra una salida faltante a media
-  secuencia, la cual desplazaria todo el emparejamiento). Lo dudoso no se cuenta.
+- `ambigua`: la secuencia contradice el sentido declarado. Lo dudoso no se cuenta.
+- `intervalo_excedido`: un par supera el maximo versionado `INTERVALO_MAX_S` (inicial
+  16 h, decision del propietario 26/11/2026, configurable por empresa; se usa la de la
+  checada de ENTRADA). No se cuenta y conserva ambos extremos. Recuperacion: sin
+  sentido declarado, la checada de cierre se reinterpreta como nueva entrada, de modo
+  que una salida faltante no desplaza el emparejamiento del resto de la semana.
 - `traslape`: dos intervalos (de relojes distintos) se encimian; ambos se conservan y
   `tiempo_sin_traslape` da la union para no contar el mismo segundo dos veces.
 - Traslado entre empresas: hueco entre una salida y una entrada de empresas distintas
   el mismo dia (fecha local de cada extremo; Q-F abierta para turnos que cruzan
   medianoche). Hasta el maximo versionado (`TRASLADO_MAX_S`, origen patronal) es un
-  intervalo `traslado`; por encima, incidencia `traslado_excedido` y no se computa.
+  intervalo `traslado`; por encima, incidencia `traslado_excedido` y no se computa. El
+  maximo es el de la empresa DESTINO. Si el hueco entre empresas cruza la medianoche
+  local y no excede el maximo, no se adivina: incidencia `traslado_pendiente_q_f`
+  (pregunta abierta Q-F, doc. 03 15.2) sin computar; un hueco mayor al maximo no puede
+  ser traslado y no genera incidencia.
 - Las checadas marcadas `posible_duplicado` o `futura` no participan; siguen existiendo
   en las marcas (nada se elimina).
 """
@@ -34,7 +41,7 @@ from Dominio.checadas import (
     ordenar_checadas,
 )
 from Dominio.modelos import ORIGEN_PATRONAL
-from Dominio.normatividad import TRASLADO_MAX_S, resolver_vigente
+from Dominio.normatividad import INTERVALO_MAX_S, TRASLADO_MAX_S, resolver_vigente
 from Dominio.tiempo import Intervalo
 
 NORMAL = "normal"
@@ -44,6 +51,8 @@ IMPAR = "impar"
 AMBIGUA = "ambigua"
 TRASLAPE = "traslape"
 TRASLADO_EXCEDIDO = "traslado_excedido"
+INTERVALO_EXCEDIDO = "intervalo_excedido"
+TRASLADO_PENDIENTE_Q_F = "traslado_pendiente_q_f"
 
 _EXCLUIDAS = frozenset({POSIBLE_DUPLICADO, FUTURA})
 
@@ -91,7 +100,7 @@ def _par(entrada: Checada, salida: Checada) -> IntervaloEmparejado:
     return IntervaloEmparejado(Intervalo(entrada.instante_s, salida.instante_s), entrada, salida)
 
 
-def _emparejar_secuencia(usables, limite_intervalo_s):
+def _emparejar_secuencia(usables, versiones):
     """Recorre la secuencia ordenada; devuelve (intervalos normales, incidencias)."""
     abiertas: list[Checada] = []
     intervalos, incidencias = [], []
@@ -112,9 +121,12 @@ def _emparejar_secuencia(usables, limite_intervalo_s):
                 )
                 continue
             abiertas.remove(abierta)
-            if limite_intervalo_s is not None and c.instante_s - abierta.instante_s > limite_intervalo_s:
+            maximo = resolver_vigente(
+                versiones, INTERVALO_MAX_S, abierta.fecha_local, ORIGEN_PATRONAL, abierta.empresa
+            ).valor
+            if c.instante_s - abierta.instante_s > maximo:
                 incidencias.append(
-                    _incidencia(AMBIGUA, [abierta, c], "intervalo mayor al limite permitido")
+                    _incidencia(INTERVALO_EXCEDIDO, [abierta, c], "intervalo mayor al maximo")
                 )
                 if c.sentido is None:  # sin sentido declarado, c puede ser una nueva entrada
                     abiertas.append(c)
@@ -152,13 +164,25 @@ def _traslados(intervalos, versiones):
             ultimo is not None
             and sig.intervalo.inicio > ultimo.intervalo.fin
             and ultimo.hasta.empresa != sig.desde.empresa
-            and ultimo.hasta.fecha_local == sig.desde.fecha_local
         ):
             hueco = sig.intervalo.inicio - ultimo.intervalo.fin
             maximo = resolver_vigente(
-                versiones, TRASLADO_MAX_S, ultimo.hasta.fecha_local, ORIGEN_PATRONAL
+                versiones,
+                TRASLADO_MAX_S,
+                ultimo.hasta.fecha_local,
+                ORIGEN_PATRONAL,
+                sig.desde.empresa,  # empresa destino
             ).valor
-            if hueco <= maximo:
+            if ultimo.hasta.fecha_local != sig.desde.fecha_local:
+                if hueco <= maximo:
+                    excedidos.append(
+                        _incidencia(
+                            TRASLADO_PENDIENTE_Q_F,
+                            [ultimo.hasta, sig.desde],
+                            "hueco entre empresas que cruza la medianoche (Q-F)",
+                        )
+                    )
+            elif hueco <= maximo:
                 traslados.append(
                     IntervaloEmparejado(
                         Intervalo(ultimo.intervalo.fin, sig.intervalo.inicio),
@@ -180,17 +204,15 @@ def _traslados(intervalos, versiones):
     return traslados, excedidos
 
 
-def emparejar(
-    marcadas, versiones, *, limite_intervalo_s: int | None = None
-) -> ResultadoEmparejamiento:
+def emparejar(marcadas, versiones) -> ResultadoEmparejamiento:
     """Intervalos e incidencias a partir de las checadas marcadas de un trabajador.
 
-    `versiones`: politica patronal (maximo de traslado, via `resolver_vigente`); si falta
+    `versiones`: politica patronal (maximos de intervalo y traslado, via `resolver_vigente`); si falta
     una version se propaga `FaltaParametro` para que el llamador marque provisional.
-    `limite_intervalo_s`: opcional; sin el no se adivina ningun corte (hueco de decision).
+    El maximo de intervalo y el de traslado son politica patronal por empresa.
     """
     usables = ordenar_checadas(cm.checada for cm in marcadas if not (cm.marcas & _EXCLUIDAS))
-    intervalos, incidencias = _emparejar_secuencia(usables, limite_intervalo_s)
+    intervalos, incidencias = _emparejar_secuencia(usables, versiones)
     intervalos.sort(key=_clave_intervalo)
     incidencias += _traslapes(intervalos)
     traslados, excedidos = _traslados(intervalos, versiones)
