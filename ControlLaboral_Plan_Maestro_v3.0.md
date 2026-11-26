@@ -483,6 +483,8 @@ El patrón y el centro de trabajo son datos distintos: un trabajador puede checa
 
 ### 13.2 Migración
 
+**Decisión del propietario (26/11/2026):** V2 empieza de cero. Las empresas arrancan en blanco y **no se migran las bases de datos de V1** (`tiempo_extra/Empresas/*/tiempo_extra.db`, `datos/catalogo_te.db`); de V1 solo se reutiliza el código que funcione (matriz 13). El histórico permanece en V1 para consulta (Q07). **Única excepción, decidida el 26/11/2026:** el catálogo de empleados se **importa una sola vez desde Excel** con los pasos siguientes; después, el Excel deja de usarse. Como V2 tiene un solo registro de empleado para todas las empresas (§13.1), la vista previa debe detectar a la misma persona en catálogos de varias empresas y proponer su unión para que RH la confirme; nunca unir identidades automáticamente.
+
 1. Inventariar columnas, formatos, claves, duplicados y vínculos utilizados por el Excel actual. Respaldar archivo y base de datos.
 2. Preparar importador con mapeo explícito, vista previa, validación de ceros iniciales, fechas, nombres, IDs duplicados, horarios y referencias faltantes. No inventar datos ni corregir identidades automáticamente.
 3. Ejecutar simulación en copia; conciliar número de empleados, activos/inactivos, filas rechazadas, checadas vinculadas y huérfanas. Guardar informe y resolver discrepancias.
