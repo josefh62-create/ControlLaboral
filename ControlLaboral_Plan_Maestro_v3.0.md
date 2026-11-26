@@ -450,9 +450,11 @@ Actualmente el catálogo se administra en Excel. Migrarlo a la base de datos ind
 | Baja | Desactivar sin borrar checadas, revisiones, relaciones ni exportaciones históricas |
 | Reactivación | Registrar nueva vigencia y conservar la baja previa; no reutilizar identidad de otra persona |
 
-Campos propuestos: ID interno, número de empleado, nombre y apellidos, empresa/centro de trabajo, departamento y puesto si existen, fecha de ingreso y baja, estado, horario y política de tolerancias asignados por vigencia. CURP/RFC únicamente cuando sean necesarios y autorizados; no exigir datos bancarios, médicos o biométricos. Conservar identificación histórica en reportes. Definir permisos de consulta, alta, edición, baja, reactivación e importación; registrar usuario, fecha y valores anteriores/nuevos.
+Campos propuestos: ID interno, número de empleado, nombre y apellidos, patrón (empresa con la que el trabajador está dado de alta ante el IMSS) y centro de trabajo/empresa donde labora y checa, cada uno con vigencia, departamento y puesto si existen, fecha de ingreso y baja, estado, horario y política de tolerancias asignados por vigencia. CURP/RFC únicamente cuando sean necesarios y autorizados; no exigir datos bancarios, médicos o biométricos. Conservar identificación histórica en reportes. Definir permisos de consulta, alta, edición, baja, reactivación e importación; registrar usuario, fecha y valores anteriores/nuevos.
 
 Separar el empleado de su identificador externo en el reloj mediante una relación con dispositivo/origen y vigencias. No asumir que el ID del reloj es globalmente único o permanente. Impedir solapamientos ambiguos; si un código se reutiliza, resolverlo conforme a la fecha de la checada. Los registros sin correspondencia quedan pendientes, nunca se asignan por aproximación de nombre. No borrar empleados con dependencias.
+
+El patrón y el centro de trabajo son datos distintos: un trabajador puede checar en el reloj de una empresa y estar dado de alta ante el IMSS con otra (decisión del propietario, 26/11/2026; en V1 corresponde al campo informativo `empresa_base`, cuyo valor inicial común es AEI, la primera empresa del sistema). Los reportes y exportaciones de tiempo extra identifican al patrón responsable; el centro de trabajo indica dónde se generó la checada.
 
 ### 13.2 Migración
 

@@ -49,11 +49,12 @@ Base: texto literal del decreto en `00_FUENTE_LEGAL_DECRETO_2026-05-01.md`. Inte
 
 - **Q06 resuelta:** sábado y domingo dejan de tener jornada fija de 8 h; los horarios se asignan por trabajador/grupo y por año (plan §4.2).
 - **Q07 resuelta:** V2 calcula solo hacia adelante, desde el 01/01/2027 (tope 46 h y reglas STPS del registro electrónico). No reproduce resultados históricos de V1; el histórico de V1 se conserva para consulta. Riesgo: quedan ~5 semanas; V1 debe seguir disponible como respaldo durante la operación paralela (plan §20).
-- **Q08 (parcial):** los usuarios administran los códigos; en un reloj compartido por varias empresas el código es único. V2 identifica por (reloj, código, vigencia) → empleado y bloquea solapamientos (plan §13.1). Si el reglamento STPS cambia la identificación (CURP/NSS), solo cambia esa relación. Pendiente: qué es «Empresa base».
+- **Q08 (parcial):** los usuarios administran los códigos; en un reloj compartido por varias empresas el código es único. V2 identifica por (reloj, código, vigencia) → empleado y bloquea solapamientos (plan §13.1). Si el reglamento STPS cambia la identificación (CURP/NSS), solo cambia esa relación.
+- **Q08 resuelta (26/11/2026):** «Empresa base» es el patrón IMSS del trabajador (AEI fue la primera empresa del sistema). Un trabajador puede checar en una empresa y estar dado de alta con otra; V2 guarda patrón y centro de trabajo por separado, con vigencia (plan §13.1).
 - **Horario incompatible con el tope (26/11/2026):** si la extra semanal supera la suma de excesos diarios (horario acordado por encima del tope), el remanente se asigna a los últimos minutos programados de la semana y se emite HO03. No se bloquea el cálculo (plan §5.2).
 
 ## 6. Preguntas pendientes
 
 1. ¿Qué otros esquemas de jornada usarán además de 5 × 8 + 6 (turnos nocturnos, 4 × 12, etc.)? ¿Cuáles tendrán acuerdo art. 58 firmado? (Relacionada con Q14.)
 2. Validar con el asesor laboral la lectura (A)/(B) y el criterio de Q05 cuando haya dictamen o reglamento STPS.
-3. Siguientes preguntas de la auditoría: Q08 restante («Empresa base») y Q09 a Q15 (ver `01_AUDITORIA_SISTEMA_ACTUAL.md` §9).
+3. Siguientes preguntas de la auditoría: Q09 a Q15 (ver `01_AUDITORIA_SISTEMA_ACTUAL.md` §9).

@@ -31,4 +31,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-24: respondidas Q01 (sin conexión al reloj; reportes por empresa → Genérico), Q02 (conservar archivo original byte a byte + hash), Q03 (solo entrada/salida; descanso según horario), Q04 (nuevo reglamento; tolerancias 0–15 configurables). Q05 en discusión: el propietario sostiene «completar 46 h antes de extras»; se leyó el decreto literal (`Documentacion/00_FUENTE_LEGAL_DECRETO_2026-05-01.md`) y se redactaron conclusiones (`Documentacion/14_CONCLUSIONES_DECRETO_Y_PENDIENTES.md`).
 - 2026-11-24: Q05 (provisional), Q06, Q07 y Q08 parcial resueltas; commit 8a3dbf7; PR #1 fusionado en main sin las correcciones no bloqueantes.
 - 2026-11-26: rama docs/correcciones-q05-q08: ejemplo de compensación corregido, regla de horario incompatible (remanente a los últimos minutos programados + HO03, decisión del propietario), fechas 25→24/11, docs 01 §9, 13 §D y 14 §4.3/§6 actualizados.
-- Siguiente: Q08 restante («Empresa base»), Q09–Q15, luego T4.
+- 2026-11-26: Q08 resuelta: «Empresa base» = patrón IMSS del trabajador (AEI, primera empresa); patrón y centro de trabajo separados con vigencia (plan §13.1).
+- Siguiente: Q09–Q15, luego T4.
