@@ -43,4 +43,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: Q13 resuelta: una PC, 40–200 empleados por empresa; SQLite local, cuenta por usuario (plan §22.1).
 - 2026-11-26: Q14 resuelta: jornada 7:00–22:00 actual (alerta art. 66); principio NL07: contemplar todos los regímenes de la LFT.
 - 2026-11-26: Q15 resuelta: Herramientas → Respaldar/Restaurar, respaldo automático, destino elegido por el usuario. T3b completa (Q01–Q15).
-- Siguiente: transcribir artículos LFT pendientes (doc 14 §6); T4 propuesta de arquitectura.
+- 2026-11-26: PR #2 abierto. Transcritos en doc 00 los arts. LFT 22, 22 Bis, 58, 60, 63, 64, 73–75, 173–180, 804–805 (Diputados, última reforma DOF 14-05-2026); confirman art. 74, jornada nocturna desde las 2:00 y conservación art. 804.
+- Siguiente: T4 propuesta de arquitectura.
