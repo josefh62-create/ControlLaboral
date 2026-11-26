@@ -15,7 +15,7 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - [x] T2 — Matriz de reutilización inicial → `Documentacion/13_MATRIZ_DE_REUTILIZACION.md` (ruta: delegado junto con T1)
 - [x] T3 — Revisión del orquestador y presentación al usuario
 - [x] T3b — Respuestas del propietario a Q01–Q15 (bloquea decisiones de R001, R006–R008, R011–R014)
-- [ ] T4 — Propuesta de arquitectura V2 (pendiente de aprobación del diagnóstico)
+- [ ] T4 — Propuesta de arquitectura V2 → `Documentacion/03_ARQUITECTURA_TECNICA.md` (ruta: delegado, disparadores 4+ archivos y preparación de escritura; rama docs/t4-arquitectura sobre docs/correcciones-q05-q08)
 
 ## Criterios de aceptación
 - Cada hallazgo A01–A10 con ruta, símbolo, comportamiento observado, estado y riesgo.
@@ -44,4 +44,6 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: Q14 resuelta: jornada 7:00–22:00 actual (alerta art. 66); principio NL07: contemplar todos los regímenes de la LFT.
 - 2026-11-26: Q15 resuelta: Herramientas → Respaldar/Restaurar, respaldo automático, destino elegido por el usuario. T3b completa (Q01–Q15).
 - 2026-11-26: PR #2 abierto. Transcritos en doc 00 los arts. LFT 22, 22 Bis, 58, 60, 63, 64, 73–75, 173–180, 804–805 (Diputados, última reforma DOF 14-05-2026); confirman art. 74, jornada nocturna desde las 2:00 y conservación art. 804.
-- Siguiente: T4 propuesta de arquitectura.
+- 2026-11-26: foto opcional del empleado (archivo o cámara web, QtMultimedia verificado en PyPortable314) agregada al plan §13.1.
+- 2026-11-26: T4 entregada como propuesta: `Documentacion/03_ARQUITECTURA_TECNICA.md` (523 líneas; dominio puro + capa MVC, entregas E0–E8, 9 decisiones del propietario, conflictos C1–C9 entre documentos del SSD).
+- Siguiente: decisiones del propietario sobre la propuesta (doc 03 §14); luego aprobar T4.
