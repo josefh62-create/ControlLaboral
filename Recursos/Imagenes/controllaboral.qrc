@@ -1,0 +1,7 @@
+<RCC>
+  <qresource prefix="/">
+    <file>Inicio256.png</file>
+    <file>TemaClaroOscuro256.png</file>
+    <file>Apagado64.png</file>
+  </qresource>
+</RCC>
