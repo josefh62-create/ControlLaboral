@@ -17,14 +17,14 @@ DOMINGO_PROHIBIDO = "domingo_prohibido"
 DESCANSO_OBLIGATORIO_PROHIBIDO = "descanso_obligatorio_prohibido"
 NOCTURNO_MENOR_PROHIBIDO = "nocturno_menor_prohibido"
 
-# Alerta por infraccion. Solo AL02 (tiempo extraordinario detectado) corresponde
-# con claridad; el plan 4.4 no define un codigo AL para las demas prohibiciones
-# de menores: quedan en None hasta que el propietario lo decida (no se inventa).
+# Toda prohibicion de menores dispara AL13 "Prohibicion para menores" (critico;
+# decision del propietario 26/11/2026, plan 4.4). El tiempo extra de un menor es
+# AL13 (prohibicion), no AL02.
 _ALERTA = {
-    EXTRA_PROHIBIDA: "AL02",
-    DOMINGO_PROHIBIDO: None,
-    DESCANSO_OBLIGATORIO_PROHIBIDO: None,
-    NOCTURNO_MENOR_PROHIBIDO: None,
+    EXTRA_PROHIBIDA: "AL13",
+    DOMINGO_PROHIBIDO: "AL13",
+    DESCANSO_OBLIGATORIO_PROHIBIDO: "AL13",
+    NOCTURNO_MENOR_PROHIBIDO: "AL13",
 }
 _FUNDAMENTO = {
     EXTRA_PROHIBIDA: "LFT art. 178",
@@ -32,6 +32,9 @@ _FUNDAMENTO = {
     DESCANSO_OBLIGATORIO_PROHIBIDO: "LFT art. 178",
     NOCTURNO_MENOR_PROHIBIDO: "LFT arts. 175 I y 176",
 }
+
+
+MAX_FIN_DEL_DIA_S = 2 * 86_400  # cota para detectar valores no interpretables
 
 
 class TrabajoMenorProhibido(ValueError):
@@ -49,6 +52,7 @@ class Regimen:
     clave_hora_limite: str | None = None
     clave_periodo_max: str | None = None
     clave_reposo_min: str | None = None
+    supuesto: str | None = None  # valor que la LFT no fija y se adopta por supuesto
 
 
 _MENOR = dict(
@@ -73,7 +77,16 @@ REGIMENES: dict[str, Regimen] = {
             clave_reposo_min=n.MENOR16_REPOSO_MIN_S,
             **_MENOR,
         ),
-        Regimen("menor_16_18", "Mayor de 16 y menor de 18 (arts. 175, 178)", n.JORNADA_DIURNA_S, **_MENOR),
+        Regimen(
+            "menor_16_18",
+            "Mayor de 16 y menor de 18 (arts. 175, 178)",
+            n.JORNADA_DIURNA_S,
+            supuesto=(
+                "Supuesto: la LFT no fija un tope diario especifico para 16-18; "
+                "se aplica el tope general de 8 h (validar con el asesor laboral)"
+            ),
+            **_MENOR,
+        ),
     )
 }
 
@@ -82,17 +95,21 @@ def obtener_regimen(codigo: str) -> Regimen:
     return REGIMENES[codigo]
 
 
-def regimen_por_edad(edad: int) -> Regimen | None:
+def regimen_por_edad(edad: int, versiones, fecha: date) -> Regimen | None:
     """Regimen de menores segun anos cumplidos; None para mayores de edad.
 
-    Menor de 15: trabajo prohibido (art. 22 Bis). El texto del art. 22 dice
-    «mayores de quince»; aqui se toman 15 anos cumplidos (a validar con el asesor).
+    Los umbrales (15/16/18) salen de la semilla versionada. Menor del minimo:
+    trabajo prohibido (art. 22 Bis). El art. 22 dice «mayores de quince»; se
+    toman 15 anos cumplidos (a validar con el asesor).
     """
-    if edad < 15:
-        raise TrabajoMenorProhibido(f"menor de 15 anos ({edad}): trabajo prohibido (art. 22 Bis)")
-    if edad < 16:
+    minima = resolver_vigente(versiones, n.EDAD_MINIMA_TRABAJO, fecha).valor
+    fin_15_16 = resolver_vigente(versiones, n.EDAD_FIN_REGIMEN_15_16, fecha).valor
+    mayoria = resolver_vigente(versiones, n.EDAD_MAYORIA, fecha).valor
+    if edad < minima:
+        raise TrabajoMenorProhibido(f"menor de {minima} anos ({edad}): trabajo prohibido (art. 22 Bis)")
+    if edad < fin_15_16:
         return REGIMENES["menor_15_16"]
-    if edad < 18:
+    if edad < mayoria:
         return REGIMENES["menor_16_18"]
     return None
 
@@ -141,7 +158,19 @@ def evaluar_prohibiciones(
     es_descanso_obligatorio: bool = False,
     fin_del_dia_s: int | None = None,
 ) -> tuple[Infraccion, ...]:
-    """Prohibiciones del regimen que el dia evaluado viola (vacio si ninguna)."""
+    """Prohibiciones del regimen que el dia evaluado viola (vacio si ninguna).
+
+    `fin_del_dia_s` son segundos desde el INICIO DEL DIA LOGICO: un turno que
+    termina a las 00:30 del dia siguiente se expresa como 86400 + 1800. Se
+    admite terminar exactamente en la hora limite. Un valor que no sea entero o
+    quede fuera de 0..172800 (48 h) no es interpretable y levanta ValueError.
+    """
+    if fin_del_dia_s is not None and (
+        isinstance(fin_del_dia_s, bool)
+        or not isinstance(fin_del_dia_s, int)
+        or not 0 <= fin_del_dia_s <= MAX_FIN_DEL_DIA_S
+    ):
+        raise ValueError(f"fin_del_dia_s no interpretable: {fin_del_dia_s!r}")
     encontradas = []
     if tiempo_extra_s > 0 and not regimen.permite_extra:
         encontradas.append(EXTRA_PROHIBIDA)
@@ -158,8 +187,13 @@ def evaluar_prohibiciones(
 def clasificar_jornada(segundos_nocturnos: int, segundos_diurnos: int, versiones, fecha: date) -> str:
     """Art. 60: con >= 3 h 30 nocturnas la jornada mixta se reputa nocturna.
 
-    Todo en periodo nocturno es nocturna; todo diurno es diurna.
+    Todo en periodo nocturno es nocturna; todo diurno es diurna. Cantidades
+    negativas o una jornada sin tiempo (0 y 0) levantan ValueError.
     """
+    if segundos_nocturnos < 0 or segundos_diurnos < 0:
+        raise ValueError("los segundos no pueden ser negativos")
+    if segundos_nocturnos == 0 and segundos_diurnos == 0:
+        raise ValueError("jornada sin tiempo: no hay nada que clasificar")
     if segundos_nocturnos == 0:
         return "diurna"
     if segundos_diurnos == 0:

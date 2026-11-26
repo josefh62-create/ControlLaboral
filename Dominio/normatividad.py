@@ -114,6 +114,10 @@ MENOR16_JORNADA_S = "menor16_jornada_s"
 MENOR16_PERIODO_MAX_S = "menor16_periodo_max_s"
 MENOR16_REPOSO_MIN_S = "menor16_reposo_min_s"
 MENOR_HORA_LIMITE_S = "menor_hora_limite_s"
+# Umbrales de edad (anos cumplidos) de los regimenes de menores.
+EDAD_MINIMA_TRABAJO = "edad_minima_trabajo"
+EDAD_FIN_REGIMEN_15_16 = "edad_fin_regimen_15_16"
+EDAD_MAYORIA = "edad_mayoria"
 
 # Alerta que dispara rebasar cada limite (plan 4.4); art. 66 y 68 distintos (NL06).
 ALERTA_POR_LIMITE = {
@@ -188,4 +192,8 @@ SEMILLA_LEGAL: tuple[VersionParametro, ...] = (
     _v(MENOR16_PERIODO_MAX_S, _H(3), _D2026, None, "LFT art. 177"),
     _v(MENOR16_REPOSO_MIN_S, _H(1), _D2026, None, "LFT art. 177"),
     _v(MENOR_HORA_LIMITE_S, _H(22), _D2026, None, "LFT arts. 175 I y 176"),
+    # Edades: art. 22 Bis (prohibido menor de 15), art. 22 y 177 (15 a 16), arts. 173-180 (18).
+    _v(EDAD_MINIMA_TRABAJO, 15, _D2026, None, "LFT arts. 22 y 22 Bis"),
+    _v(EDAD_FIN_REGIMEN_15_16, 16, _D2026, None, "LFT arts. 22 y 177"),
+    _v(EDAD_MAYORIA, 18, _D2026, None, "LFT arts. 173 a 180 (menores de dieciocho anos)"),
 )

@@ -5,7 +5,7 @@ import pytest
 
 from Dominio import normatividad as n
 from Dominio import regimenes as r
-from Dominio.normatividad import FaltaParametro
+from Dominio.normatividad import FaltaParametro, resolver_vigente
 from Dominio.tiempo import horas_a_segundos, minutos_a_segundos
 
 S = n.SEMILLA_LEGAL
@@ -92,20 +92,30 @@ def test_infracciones_citan_fundamento_y_alerta_diferenciada():
     reg = r.obtener_regimen("menor_16_18")
     (inf,) = r.evaluar_prohibiciones(reg, S, F, tiempo_extra_s=60)
     assert "178" in inf.fundamento
-    assert inf.alerta == "AL02"
+    assert inf.alerta == "AL13"
 
 
 @pytest.mark.parametrize(
     "edad, codigo", [(15, "menor_15_16"), (16, "menor_16_18"), (17, "menor_16_18"), (18, None), (40, None)]
 )
 def test_regimen_por_edad(edad, codigo):
-    reg = r.regimen_por_edad(edad)
+    reg = r.regimen_por_edad(edad, S, F)
     assert (reg.codigo if reg else None) == codigo
 
 
 def test_menor_de_15_trabajo_prohibido_art_22_bis():
     with pytest.raises(r.TrabajoMenorProhibido):
-        r.regimen_por_edad(14)
+        r.regimen_por_edad(14, S, F)
+
+
+def test_umbrales_de_edad_vienen_de_la_semilla_versionada():
+    assert resolver_vigente(S, n.EDAD_MINIMA_TRABAJO, F).valor == 15
+    assert resolver_vigente(S, n.EDAD_FIN_REGIMEN_15_16, F).valor == 16
+    assert resolver_vigente(S, n.EDAD_MAYORIA, F).valor == 18
+    for clave in (n.EDAD_MINIMA_TRABAJO, n.EDAD_FIN_REGIMEN_15_16, n.EDAD_MAYORIA):
+        assert resolver_vigente(S, clave, F).fuente.startswith("LFT art")
+    with pytest.raises(FaltaParametro):
+        r.regimen_por_edad(16, (), F)
 
 
 @pytest.mark.parametrize(
@@ -124,3 +134,55 @@ def test_p27_umbral_3h29_mixta_3h30_nocturna():
     umbral = minutos_a_segundos(210)
     assert r.clasificar_jornada(umbral - 60, 3600, S, F) == "mixta"
     assert r.clasificar_jornada(umbral, 3600, S, F) == "nocturna"
+
+
+@pytest.mark.parametrize("codigo", ["menor_15_16", "menor_16_18"])
+def test_toda_prohibicion_de_menores_es_al13(codigo):
+    reg = r.obtener_regimen(codigo)
+    infs = r.evaluar_prohibiciones(
+        reg, S, F, tiempo_extra_s=60, es_domingo=True, es_descanso_obligatorio=True,
+        fin_del_dia_s=horas_a_segundos(23),
+    )
+    assert {i.codigo for i in infs} == {
+        r.EXTRA_PROHIBIDA, r.DOMINGO_PROHIBIDO,
+        r.DESCANSO_OBLIGATORIO_PROHIBIDO, r.NOCTURNO_MENOR_PROHIBIDO,
+    }
+    assert {i.alerta for i in infs} == {"AL13"}
+
+
+def test_hora_limite_22_exacta_permitida_y_un_segundo_despues_no():
+    reg = r.obtener_regimen("menor_16_18")
+    fin = lambda s: r.evaluar_prohibiciones(reg, S, F, fin_del_dia_s=s)
+    assert fin(horas_a_segundos(22)) == ()
+    (inf,) = fin(horas_a_segundos(22) + 1)
+    assert inf.alerta == "AL13"
+
+
+def test_turno_que_cruza_medianoche_se_expresa_desde_el_inicio_del_dia_logico():
+    reg = r.obtener_regimen("menor_15_16")
+    # 00:30 del dia siguiente = 86400 + 1800 segundos
+    (inf,) = r.evaluar_prohibiciones(reg, S, F, fin_del_dia_s=86_400 + 1_800)
+    assert inf.codigo == r.NOCTURNO_MENOR_PROHIBIDO and inf.alerta == "AL13"
+
+
+@pytest.mark.parametrize("malo", [-1, 172_801, 3600.5, True, "22:00"])
+def test_fin_del_dia_no_interpretable_se_rechaza(malo):
+    reg = r.obtener_regimen("menor_16_18")
+    with pytest.raises(ValueError):
+        r.evaluar_prohibiciones(reg, S, F, fin_del_dia_s=malo)
+
+
+def test_clasificar_jornada_rechaza_negativos_y_jornada_vacia():
+    with pytest.raises(ValueError):
+        r.clasificar_jornada(-1, 100, S, F)
+    with pytest.raises(ValueError):
+        r.clasificar_jornada(100, -1, S, F)
+    with pytest.raises(ValueError):
+        r.clasificar_jornada(0, 0, S, F)
+
+
+def test_tope_8h_de_menor_16_18_es_un_supuesto_explicito():
+    reg = r.obtener_regimen("menor_16_18")
+    assert reg.supuesto and "supuesto" in reg.supuesto.lower()
+    assert r.obtener_regimen("menor_15_16").supuesto is None
+    assert r.obtener_regimen("diurna").supuesto is None
