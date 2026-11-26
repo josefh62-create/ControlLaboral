@@ -209,10 +209,10 @@ Clasificar intervalos efectivos confirmados, no solo la diferencia entre la prim
 
 Para cada intervalo, dividir en fronteras relevantes: inicio/fin de horario, descansos, medianoche, fin de semana, cambio de vigencia y agotamiento de topes. Cada segmento conserva inicio, fin, duración, categoría base, etiquetas adicionales y regla aplicada.
 
-**Criterio de inicio de extra (decisión del propietario, 25/11/2026; parámetro normativo versionado, sujeto al reglamento STPS y al dictamen del asesor laboral):** criterio «semanal con acuerdo» por defecto desde 2027.
+**Criterio de inicio de extra (decisión del propietario, 24/11/2026; parámetro normativo versionado, sujeto al reglamento STPS y al dictamen del asesor laboral):** criterio «semanal con acuerdo» por defecto desde 2027.
 
 1. **Cuánto:** extra semanal = máx(0, tiempo efectivo confirmado de la semana − tope ordinario semanal vigente, p. ej. 46 h en 2027). Los días cortos se compensan con los largos dentro de la misma semana.
-2. **Dónde:** las horas extra se asignan solo a segmentos de exceso diario (trabajo confirmado fuera del horario acordado del día, incluido el trabajo en días sin horario). Si el exceso total supera la extra semanal (porque hubo faltantes), los excesos más antiguos compensan los faltantes y la extra se asigna a los excesos más recientes. Por construcción, la extra semanal nunca supera la suma de excesos diarios.
+2. **Dónde:** las horas extra se asignan solo a segmentos de exceso diario (trabajo confirmado fuera del horario acordado del día, incluido el trabajo en días sin horario). Si el exceso total supera la extra semanal (porque hubo faltantes), los excesos más antiguos compensan los faltantes y la extra se asigna a los excesos más recientes. Si la extra semanal supera la suma de excesos diarios (solo ocurre cuando el horario acordado de la semana rebasa el tope vigente), el remanente se asigna a los últimos minutos programados de la semana, en orden cronológico inverso, y se emite la alerta HO03 «horario incompatible con el tope legal». El tiempo nunca se pierde ni se bloquea el cálculo; RH debe corregir el horario (decisión del propietario, 26/11/2026).
 3. **Límites:** con esa asignación se evalúan los límites del art. 66 (4 h/día, 4 días/semana), el tope diario de 12 h del art. 68 y los tramos doble/triple. Nunca se cargan al último día todas las extras de la semana.
 4. El criterio se guarda en cada semana calculada. Si el reglamento STPS o el dictamen lo cambian, se crea una nueva versión del parámetro, sin cambiar código.
 
@@ -224,7 +224,9 @@ Ejemplo 2027: trabajador con 40 h normales acumuladas de lunes a viernes; sábad
 
 Ejemplo 2027, horario 5 × 8 + 6: trabaja 9 h de lunes a sábado (54 h). Extra semanal = 54 − 46 = 8 h. Excesos diarios: 1 h lunes a viernes + 3 h sábado = 8 h. Resultado: 1 h extra por día de lunes a viernes y 3 h el sábado. Ningún día rebasa 4 h; extras en 6 días → alerta del límite de 4 días del art. 66, sin borrar tiempo.
 
-Ejemplo de compensación: lunes 10 h, martes 10 h, sábado 4 h, resto conforme a horario (46 h). Extra semanal = 0; los excesos de lunes y martes compensan el faltante del sábado. Si el sábado fueran 6 h (48 h): extra = 2 h, asignada al exceso más reciente (martes).
+Ejemplo de compensación, horario 5 × 8 + 6: lunes 10 h, martes 10 h, miércoles 4 h, jueves 8 h, viernes 8 h, sábado 6 h (46 h). Extra semanal = 0; los excesos de lunes y martes (4 h) compensan el faltante del miércoles (4 h). Si el miércoles fueran 6 h (48 h): extra = 2 h; el exceso más antiguo (lunes) compensa el faltante de 2 h y la extra se asigna al exceso más reciente (martes, 2 h).
+
+Ejemplo de horario incompatible, 2027: horario acordado 6 × 8 h (48 h) trabajado exactamente. Extra semanal = 48 − 46 = 2 h; no hay excesos diarios, así que las 2 h se asignan a los últimos 120 min programados del sábado y se emite HO03.
 
 ### 5.3 Acumulación semanal y clasificación de extras
 

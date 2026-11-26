@@ -29,5 +29,6 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-24: documento creado; T1+T2 delegados.
 - 2026-11-24: T1+T2 entregados (01: 53 KB; 13: 29 KB, 47 componentes + 22 «desarrollar»). Verificado por orquestador: `git status` de V1 idéntico a la base (` M config.json`, `?? APP_REVISAR_CHECADAS_TE_AEI_260720.xlsx`); hallazgo de redondeo ±0.33 y `neto_semana` confirmados en `tiempo_extra/ClasesComunes/calculo_te.py:111-112,164-176`; sección C de la matriz consistente.
 - 2026-11-24: respondidas Q01 (sin conexión al reloj; reportes por empresa → Genérico), Q02 (conservar archivo original byte a byte + hash), Q03 (solo entrada/salida; descanso según horario), Q04 (nuevo reglamento; tolerancias 0–15 configurables). Q05 en discusión: el propietario sostiene «completar 46 h antes de extras»; se leyó el decreto literal (`Documentacion/00_FUENTE_LEGAL_DECRETO_2026-05-01.md`) y se redactaron conclusiones (`Documentacion/14_CONCLUSIONES_DECRETO_Y_PENDIENTES.md`).
-- Siguiente (25/11/2026): discutir doc 14 §5 con el propietario, cerrar Q05, seguir con Q06–Q15, luego T4.
-- Nada commiteado aún (AGENTS.md, Documentacion/, odd/ y el plan siguen sin commit).
+- 2026-11-24: Q05 (provisional), Q06, Q07 y Q08 parcial resueltas; commit 8a3dbf7; PR #1 fusionado en main sin las correcciones no bloqueantes.
+- 2026-11-26: rama docs/correcciones-q05-q08: ejemplo de compensación corregido, regla de horario incompatible (remanente a los últimos minutos programados + HO03, decisión del propietario), fechas 25→24/11, docs 01 §9, 13 §D y 14 §4.3/§6 actualizados.
+- Siguiente: Q08 restante («Empresa base»), Q09–Q15, luego T4.

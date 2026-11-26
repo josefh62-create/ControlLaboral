@@ -105,7 +105,7 @@ Total: 47 componentes de V1 (tabla A) + 22 requisitos sin equivalente (tabla B).
 
 ## D. Pendientes de esta matriz
 
-- Resolver Q01–Q15 del documento 01 (especialmente Q01 sobre el reloj y Q04–Q05 sobre las reglas de redondeo y compensación) antes de fijar decisiones sobre R001, R006–R008, R011–R014.
+- Q01–Q07 resueltas y Q08 parcial (documento 01 §9 y documento 14 §5): sin conexión al reloj, archivo original conservado con hash, tolerancias configurables sin replicar el redondeo ±0,33 h, criterio de extra «semanal con acuerdo», horarios por año en minutos, cálculo solo desde 01/01/2027. Resolver Q08 («Empresa base») y Q09–Q15 antes de fijar decisiones sobre R001, R006–R008, R011–R014.
 - Completar `Destino V2` con las rutas definitivas tras leer `VS_SIVEMA_MVC_PY/ARQUITECTURA_APPS_PYTHON.md` en la propuesta de arquitectura (T4).
 - Verificar en PyPI el soporte 3.14 de `openpyxl` y `reportlab` antes de aprobar R025, R026, R041.
 - Revisar con detalle las pantallas `.ui` (no inspeccionadas línea por línea) al implementar cada módulo.
