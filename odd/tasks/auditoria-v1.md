@@ -34,4 +34,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: Q08 resuelta: «Empresa base» = patrón IMSS del trabajador (AEI, primera empresa); patrón y centro de trabajo separados con vigencia (plan §13.1).
 - 2026-11-26: varias empresas por trabajador: empleado único, emparejamiento sobre secuencia unificada de relojes, acumulación por trabajador+patrón+semana (plan §5.1-4, §5.3, §13.1).
 - 2026-11-26: traslado entre empresas = tiempo efectivo etiquetado; > 60 min configurable → pendiente de revisión (interpretación art. 58, validar con asesor).
-- Siguiente: Q09–Q15; luego T4.
+- 2026-11-26: Q09 resuelta: calendario anual obligatorio; sin él, semanas provisionales; precarga art. 74 confirmada por RH (verificar lista contra LFT).
+- Siguiente: Q10–Q15; luego T4.

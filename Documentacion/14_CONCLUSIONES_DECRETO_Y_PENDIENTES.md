@@ -54,9 +54,10 @@ Base: texto literal del decreto en `00_FUENTE_LEGAL_DECRETO_2026-05-01.md`. Inte
 - **Horario incompatible con el tope (26/11/2026):** si la extra semanal supera la suma de excesos diarios (horario acordado por encima del tope), el remanente se asigna a los últimos minutos programados de la semana y se emite HO03. No se bloquea el cálculo (plan §5.2).
 - **Varias empresas por trabajador (26/11/2026):** un trabajador puede checar en relojes de distintas empresas en la misma semana e incluso en la misma jornada (entrada en CATAB, salida en AEI). V2 usa un solo registro de empleado, empareja checadas sobre la secuencia unificada de todos los relojes y acumula por trabajador, patrón y semana contra un solo tope; cada segmento conserva su empresa y reloj de origen; los traslapes entre relojes generan alerta y no se cuentan doble (plan §5.1 paso 4, §5.3 y §13.1).
 - **Traslado entre empresas (26/11/2026):** el hueco entre una salida en una empresa y la entrada en otra el mismo día cuenta como tiempo efectivo, etiquetado «traslado entre empresas»; si supera el máximo configurable (inicial 60 min) queda pendiente de revisión. Interpretación del art. 58 LFT (tiempo a disposición del patrón), cuyo primer párrafo no está transcrito en el documento 00: requiere validación del asesor laboral.
+- **Q09 resuelta (26/11/2026):** hoy no existe calendario de festivos. En V2 es obligatorio uno por año: sin él, las semanas son provisionales (no se cierran ni exportan) y se alerta desde el 1 de diciembre previo. Se precargan como sugerencia los descansos del art. 74 LFT, que RH confirma; la lista debe verificarse contra la LFT vigente (plan RE02).
 
 ## 6. Preguntas pendientes
 
 1. ¿Qué otros esquemas de jornada usarán además de 5 × 8 + 6 (turnos nocturnos, 4 × 12, etc.)? ¿Cuáles tendrán acuerdo art. 58 firmado? (Relacionada con Q14.)
 2. Validar con el asesor laboral la lectura (A)/(B) y el criterio de Q05 cuando haya dictamen o reglamento STPS.
-3. Siguientes preguntas de la auditoría: Q09 a Q15 (ver `01_AUDITORIA_SISTEMA_ACTUAL.md` §9).
+3. Siguientes preguntas de la auditoría: Q10 a Q15 (ver `01_AUDITORIA_SISTEMA_ACTUAL.md` §9).

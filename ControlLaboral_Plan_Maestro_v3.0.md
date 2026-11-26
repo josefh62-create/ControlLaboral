@@ -185,7 +185,9 @@ Si el sistema importa checadas por lotes, las alertas se emiten al revisar/impor
 ### 4.5 Otras reglas (RE)
 
 - RE01: día/hora de inicio de semana laboral definido y documentado; no confundir con corte de nómina. No reiniciar acumulados en mitad de semana por cambio de mes, año o periodo de pago.
-- RE02: calendario de festivos legales versionado y descansos específicos por trabajador.
+- RE02: calendario de festivos legales versionado y descansos específicos por trabajador. Hoy no existe ningún calendario (V1 no lo tiene); en V2 es **obligatorio capturar uno por cada año** (decisión del propietario, 26/11/2026).
+  - Sin calendario confirmado para el año, el cálculo de sus semanas es provisional: se puede consultar, pero no cerrar, autorizar ni exportar a nómina. Desde el 1 de diciembre se alerta si falta el calendario del año siguiente.
+  - Al crear un año, V2 precarga como sugerencia los descansos obligatorios del art. 74 LFT (incluidos los móviles: lunes por regla, 1 de octubre en transmisión del Ejecutivo Federal, jornadas electorales). RH revisa, agrega los días propios de la empresa y confirma; hasta entonces el calendario no es válido. La lista del art. 74 debe verificarse contra el texto vigente de la LFT antes de implementarla (no está transcrita en `Documentacion/00`).
 - RE03: autorización de extras como atributo independiente; no excluye tiempo efectivamente trabajado.
 - RE04: reglas de compensación o redistribución solo con base válida, acuerdo y trazabilidad; desactivadas por defecto.
 - RE05: detección de duplicados, checadas faltantes y correcciones manuales sin destrucción de originales.
