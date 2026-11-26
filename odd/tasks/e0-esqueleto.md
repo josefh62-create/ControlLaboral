@@ -53,5 +53,7 @@ Hoy el repositorio solo tiene documentación. Antes de programar el motor (E1) y
 
 - 2026-11-26: T1 `eb746d1` y T2 `3fed2fb` (delegados). `pytest -W error`: 11 passed (repetido por el orquestador). `compilar_ui.bat` sin .ui/.qrc: OK. V1 y ControlDeAlmacen sin cambios. 481 líneas de autoría (sobre el ~400 orientativo; mayormente pruebas). Riesgo evaluado: alto (evaluación con 0 líneas → se trata como alto); RDD desactivado → verificador independiente. Pendiente para E4/E6: respaldo automático antes de migrar (doc 03 §11).
 
+- 2026-11-26: verificador independiente: PASS sin bloqueos; 4 correcciones aplicadas en `4f70428` (carrera entre procesos, checksum verificado, rollback sin enmascarar errores, ruta de datos absoluta) + pruebas reforzadas. `pytest -W error`: 15 passed (repetido por el orquestador). PR E0-1 abierto.
+
 ## Siguiente paso
-Elegir la estrategia de cadena de PRs y empezar T1.
+E0-2 (T3 + T5) en `feat/e0-bases-mvc`, apilada sobre E0-1.
