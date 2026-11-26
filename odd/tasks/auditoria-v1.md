@@ -40,4 +40,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: Q10 resuelta: auxiliar administrativo elabora; flujo auxiliar → autorizador → RH; Dirección Vo.Bo. (plan §6).
 - 2026-11-26: Q11 resuelta: reparto 2:00 → aclaración (posible jornada nocturna, validar); alimentos por configuración (plan cap. 17.1).
 - 2026-11-26: Q12 resuelta: arranque en blanco, sin migrar BD de V1; catálogo de empleados importado una vez desde Excel (plan §13.2).
-- Siguiente: Q13–Q15; luego T4.
+- 2026-11-26: Q13 resuelta: una PC, 40–200 empleados por empresa; SQLite local, cuenta por usuario (plan §22.1).
+- Siguiente: Q14–Q15; luego T4.
