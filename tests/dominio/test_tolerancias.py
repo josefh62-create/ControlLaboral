@@ -147,3 +147,11 @@ def test_resolver_tolerancias_rechaza_una_version_almacenada_invalida():
     malas[1] = VersionParametro(n.TOL_ENTRADA_TARDIA_S, m(16), Vigencia(date(2027, 1, 1)), "x", ORIGEN_PATRONAL)
     with pytest.raises(ToleranciaInvalida):
         resolver_tolerancias(malas, date(2027, 3, 1), "AEI")
+
+
+def test_i2_el_error_de_valor_almacenado_invalido_nombra_la_clave():
+    malas = _todas(5, date(2027, 1, 1))
+    malas[1] = VersionParametro(n.TOL_ENTRADA_TARDIA_S, m(16), Vigencia(date(2027, 1, 1)), "x", ORIGEN_PATRONAL)
+    with pytest.raises(ToleranciaInvalida) as error:
+        resolver_tolerancias(malas, date(2027, 3, 1), "AEI")
+    assert error.value.clave == n.TOL_ENTRADA_TARDIA_S

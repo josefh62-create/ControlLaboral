@@ -33,12 +33,6 @@ DESCANSO_OBLIGATORIO = "descanso_obligatorio"
 DIA_EMPRESA = "dia_empresa"
 TRABAJADO = "trabajado"
 
-# Transmision del Poder Ejecutivo Federal (art. 74 VII, reformada DOF 30-09-2024): la
-# ultima fue el 1 de octubre de 2024 y se repite cada seis anos. Dato, no regla: se puede
-# sustituir al llamar `sugerir_descansos_obligatorios` (validar con el asesor laboral).
-ANIO_BASE_TRANSMISION = 2024
-PERIODO_TRANSMISION_ANIOS = 6
-
 PENDIENTES_MANUALES_ART74 = (
     "LFT art. 74 IX: jornada electoral de elecciones ordinarias; la fecha la fijan las leyes "
     "electorales federales y locales y no se puede calcular: RH la captura a mano.",
@@ -87,30 +81,50 @@ def _lunes(anio: int, mes: int, ordinal: int) -> date:
     return primero + timedelta(days=(0 - primero.weekday()) % 7 + 7 * (ordinal - 1))
 
 
+# (clave de la semilla legal, texto de la fraccion, es_lunes): las fechas salen de la semilla
+# legal versionada (art. 74 LFT), no del codigo.
+_ART74 = (
+    (n.ART74_I_ENERO, "I (1 de enero)", False),
+    (n.ART74_II_FEBRERO, "II (primer lunes de febrero)", True),
+    (n.ART74_III_MARZO, "III (tercer lunes de marzo)", True),
+    (n.ART74_IV_MAYO, "IV (1 de mayo)", False),
+    (n.ART74_V_SEPTIEMBRE, "V (16 de septiembre)", False),
+    (n.ART74_VI_NOVIEMBRE, "VI (tercer lunes de noviembre)", True),
+    (n.ART74_VIII_DICIEMBRE, "VIII (25 de diciembre)", False),
+)
+
+
 def sugerir_descansos_obligatorios(
     anio: int,
+    versiones=n.SEMILLA_LEGAL,
     *,
-    anio_base_transmision: int = ANIO_BASE_TRANSMISION,
-    periodo_anios: int = PERIODO_TRANSMISION_ANIOS,
+    anio_base_transmision: int | None = None,
+    periodo_anios: int | None = None,
 ) -> tuple[DescansoSugerido, ...]:
     """Descansos obligatorios del art. 74 LFT calculables para `anio`, como SUGERENCIA.
 
-    RH revisa, agrega los dias propios de la empresa y confirma (RE02); hasta entonces el
-    calendario no es valido. No incluye la jornada electoral (fraccion IX): ver
-    `PENDIENTES_MANUALES_ART74`.
+    Reglas y fechas vienen de `versiones` (semilla legal, `resolver_vigente`); si falta alguna
+    se propaga `FaltaParametro`. Los argumentos con nombre sustituyen la regla de transmision
+    del Ejecutivo (fraccion VII). RH revisa, agrega los dias propios de la empresa y confirma
+    (RE02); hasta entonces el calendario no es valido. No incluye la jornada electoral
+    (fraccion IX): ver `PENDIENTES_MANUALES_ART74`.
     """
+    referencia = date(anio, 1, 1)
     base = "LFT art. 74"
-    dias = [
-        (date(anio, 1, 1), f"{base} I (1 de enero)"),
-        (_lunes(anio, 2, 1), f"{base} II (primer lunes de febrero)"),
-        (_lunes(anio, 3, 3), f"{base} III (tercer lunes de marzo)"),
-        (date(anio, 5, 1), f"{base} IV (1 de mayo)"),
-        (date(anio, 9, 16), f"{base} V (16 de septiembre)"),
-        (_lunes(anio, 11, 3), f"{base} VI (tercer lunes de noviembre)"),
-        (date(anio, 12, 25), f"{base} VIII (25 de diciembre)"),
-    ]
-    if (anio - anio_base_transmision) % periodo_anios == 0:
-        dias.append((date(anio, 10, 1), f"{base} VII (1 de octubre, transmision del Ejecutivo Federal)"))
+
+    def valor(clave):
+        return resolver_vigente(versiones, clave, referencia).valor
+
+    dias = []
+    for clave, texto, es_lunes in _ART74:
+        v = valor(clave)
+        mes, resto = divmod(v, 100)
+        dias.append((_lunes(anio, mes, resto) if es_lunes else date(anio, mes, resto), f"{base} {texto}"))
+    base_transmision = anio_base_transmision if anio_base_transmision is not None else valor(n.ART74_ANIO_BASE_TRANSMISION)
+    periodo = periodo_anios if periodo_anios is not None else valor(n.ART74_PERIODO_TRANSMISION_ANIOS)
+    if (anio - base_transmision) % periodo == 0:
+        mes, dia = divmod(valor(n.ART74_VII_OCTUBRE), 100)
+        dias.append((date(anio, mes, dia), f"{base} VII (1 de octubre, transmision del Ejecutivo Federal)"))
     return tuple(DescansoSugerido(f, fund) for f, fund in sorted(dias))
 
 
@@ -128,11 +142,19 @@ class CalendarioAnual:
             raise ValueError(f"hay fechas fuera del anio {self.anio}")
 
 
+class CalendarioAmbiguo(ValueError):
+    """Mas de un calendario para el mismo anio (error de configuracion)."""
+
+
 def calendario_del_anio(calendarios, anio: int) -> CalendarioAnual | None:
-    """Calendario del anio, o None si falta (el llamador marca provisional + AL12)."""
+    """Calendario del anio, o None si falta (el llamador marca provisional + AL12).
+
+    Dos calendarios del mismo anio levantan `CalendarioAmbiguo`; quien calcula lo captura y
+    degrada a provisional (`calendario_ambiguo`) en vez de abortar.
+    """
     del_anio = [c for c in calendarios if c.anio == anio]
     if len(del_anio) > 1:
-        raise ValueError(f"hay {len(del_anio)} calendarios para {anio}")
+        raise CalendarioAmbiguo(f"hay {len(del_anio)} calendarios para {anio}")
     return del_anio[0] if del_anio else None
 
 
@@ -140,7 +162,10 @@ def calendario_siguiente_pendiente(fecha_referencia: date, calendarios) -> bool:
     """RE02: desde el 1 de diciembre se alerta si falta el calendario CONFIRMADO del anio siguiente."""
     if fecha_referencia.month != 12:
         return False
-    siguiente = calendario_del_anio(calendarios, fecha_referencia.year + 1)
+    try:
+        siguiente = calendario_del_anio(calendarios, fecha_referencia.year + 1)
+    except CalendarioAmbiguo:
+        return True  # configuracion ambigua: no hay un calendario confirmado utilizable
     return siguiente is None or not siguiente.confirmado
 
 
@@ -173,7 +198,11 @@ def clasificar_dia(
     """
     if trabajado_s < 0:
         raise ValueError("trabajado_s no puede ser negativo")
-    cal = calendario_del_anio(calendarios, fecha.year)
+    ambiguo = False
+    try:
+        cal = calendario_del_anio(calendarios, fecha.year)
+    except CalendarioAmbiguo:
+        cal, ambiguo = None, True
     obligatorio = cal is not None and fecha in cal.descansos_obligatorios
     de_empresa = cal is not None and fecha in cal.dias_empresa
     base = PROGRAMADO if programado else DESCANSO_SEMANAL if descanso_semanal else NO_PROGRAMADO
@@ -195,11 +224,13 @@ def clasificar_dia(
     if justificacion:
         etiquetas.add(f"justificado:{justificacion}")
     motivos = ()
-    if cal is None:
+    if ambiguo:
+        motivos = ("calendario_ambiguo",)
+    elif cal is None:
         motivos = ("calendario_faltante",)
     elif not cal.confirmado:
         motivos = ("calendario_sin_confirmar",)
-    ausencia = programado and not trabajo and not justificacion and not obligatorio
+    ausencia = programado and not trabajo and not justificacion and not obligatorio and not de_empresa
     return ClasificacionDia(
         fecha, base, frozenset(etiquetas), ausencia, bool(motivos), (AL12,) if motivos else (), motivos
     )

@@ -21,6 +21,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from Dominio import normatividad as n
 from Dominio.calendario import (
     AL12,
+    CalendarioAmbiguo,
     CalendarioAnual,
     asignar_dia_logico,
     calendario_del_anio,
@@ -29,10 +30,10 @@ from Dominio.calendario import (
 from Dominio.checadas import clave_orden
 from Dominio.emparejamiento import TRASLADO, tiempo_sin_traslape
 from Dominio.modelos import Vigencia
-from Dominio.normatividad import FaltaParametro, resolver_vigente
+from Dominio.normatividad import FaltaParametro, ParametroAmbiguo, resolver_vigente
 from Dominio.regimenes import REGIMENES, Regimen, obtener_regimen, tope_diario_s
 from Dominio.tiempo import Intervalo, instante_local
-from Dominio.tolerancias import Tolerancias, resolver_tolerancias
+from Dominio.tolerancias import Tolerancias, ToleranciaInvalida, resolver_tolerancias
 
 HO03 = "HO03"  # alerta «horario incompatible con el tope legal» (plan 5.2)
 AL09 = "AL09"  # horario futuro incompatible con la reforma (HO07)
@@ -148,16 +149,27 @@ def instantes_del_dia(horario: Horario, fecha: date) -> tuple[tuple[Intervalo, .
     )
 
 
-def fin_de_jornada_previa(horarios, zona: tzinfo):
-    """Funcion para `asignar_dia_logico`: fin (epoch) del turno programado de `fecha` si cruza la medianoche."""
+def fin_de_jornada_previa(horarios, zona: tzinfo | None = None):
+    """Funcion para `asignar_dia_logico`: fin (epoch) del turno programado de `fecha` si cruza la medianoche.
+
+    Cada horario se interpreta en SU zona. Si se entrega `zona` y algun horario usa otra se
+    rechaza con ValueError (nunca se discrepa en silencio). Con horarios ambiguos no hay fin.
+    """
+    if zona is not None:
+        for h in horarios:
+            if h.zona != getattr(zona, "key", None):
+                raise ValueError(f"el horario {h.codigo!r} usa la zona {h.zona!r}, distinta de {zona!r}")
 
     def fin(fecha: date) -> int | None:
-        horario = resolver_horario(horarios, fecha)
+        try:
+            horario = resolver_horario(horarios, fecha)
+        except HorarioAmbiguo:
+            return None
         dia = horario.dias.get(fecha.weekday()) if horario else None
         if dia is None:
             return None
         ultimo = max(i.fin for i in dia.intervalos)
-        return instante_local(fecha, ultimo, zona) if ultimo > 86_400 else None
+        return instante_local(fecha, ultimo, ZoneInfo(horario.zona)) if ultimo > 86_400 else None
 
     return fin
 
@@ -249,6 +261,18 @@ class ContextoDia:
     motivos: tuple[str, ...]
 
 
+_ERRORES_DE_CONFIGURACION = (FaltaParametro, ToleranciaInvalida, ParametroAmbiguo)
+
+
+def _motivo_de(error: Exception) -> str:
+    """Motivo de provisional para un dato faltante o una configuracion invalida/ambigua."""
+    if isinstance(error, ToleranciaInvalida):
+        return f"tolerancia_invalida:{error.clave}"
+    if isinstance(error, ParametroAmbiguo):
+        return f"parametro_ambiguo:{error.clave}"
+    return f"falta:{error.clave}"
+
+
 def resolver_contexto(fecha: date, horarios, calendarios, versiones, empresa: str | None = None) -> ContextoDia:
     """Todo lo vigente en la fecha trabajada; lo que falta se marca (provisional + AL12), no se lanza.
 
@@ -256,17 +280,21 @@ def resolver_contexto(fecha: date, horarios, calendarios, versiones, empresa: st
     La empresa del horario, si la tiene, prevalece sobre `empresa` para las tolerancias.
     """
     motivos: list[str] = []
-    horario = resolver_horario(horarios, fecha)
-    if horario is None:
-        motivos.append("horario_faltante")
+    try:
+        horario = resolver_horario(horarios, fecha)
+        if horario is None:
+            motivos.append("horario_faltante")
+    except HorarioAmbiguo:  # no se elige uno: se trata como horario faltante
+        horario = None
+        motivos.append("horario_ambiguo")
     regimen = obtener_regimen(horario.regimen) if horario else None
     dia = horario.dias.get(fecha.weekday()) if horario else None
 
     def calcular(funcion):
         try:
             return funcion()
-        except FaltaParametro as falta:
-            motivos.append(f"falta:{falta.clave}")
+        except _ERRORES_DE_CONFIGURACION as error:
+            motivos.append(_motivo_de(error))
             return None
 
     semanal = calcular(lambda: resolver_vigente(versiones, n.ORDINARIA_SEMANAL_S, fecha).valor)
@@ -275,11 +303,16 @@ def resolver_contexto(fecha: date, horarios, calendarios, versiones, empresa: st
     tolerancias = calcular(
         lambda: resolver_tolerancias(versiones, fecha, emp, horario.tolerancias if horario else None)
     )
-    calendario = calendario_del_anio(calendarios, fecha.year)
-    if calendario is None:
-        motivos.append("calendario_faltante")
-    elif not calendario.confirmado:
-        motivos.append("calendario_sin_confirmar")
+    try:
+        calendario = calendario_del_anio(calendarios, fecha.year)
+    except CalendarioAmbiguo:
+        calendario = None
+        motivos.append("calendario_ambiguo")
+    else:
+        if calendario is None:
+            motivos.append("calendario_faltante")
+        elif not calendario.confirmado:
+            motivos.append("calendario_sin_confirmar")
     return ContextoDia(
         fecha, horario, dia, regimen, tolerancias, calendario, semanal, diario,
         bool(motivos), (AL12,) if motivos else (), tuple(motivos),
@@ -421,18 +454,28 @@ def _resolver_confirmacion(confirmaciones, instante: int) -> str | None:
     return NO_LABORADO if not any(aplicables) else PENDIENTE  # resoluciones contradictorias: pendiente
 
 
-def _piezas_del_dia(dia: date, items, horarios, versiones, confirmaciones, motivos: set[str]) -> list[PiezaEfectiva]:
-    """Piezas de un dia logico. `items`: (subintervalo, fuente) ya sin segundos repetidos."""
-    horario = resolver_horario(horarios, dia)
+def _piezas_del_dia(
+    dia: date, items, horarios, versiones, confirmaciones, cubierto, motivos: set[str]
+) -> list[PiezaEfectiva]:
+    """Piezas de un dia logico. `items`: (subintervalo, fuente) ya sin segundos repetidos.
+
+    `cubierto`: intervalo completo de TODA fuente (aprobada o no): el relleno del descanso
+    computable nunca pisa tiempo que ya tiene una pieza.
+    """
+    try:
+        horario = resolver_horario(horarios, dia)
+        if horario is None:
+            motivos.add("horario_faltante")
+    except HorarioAmbiguo:  # no se elige uno: se clasifica como si faltara
+        horario = None
+        motivos.add("horario_ambiguo")
     programadas, descansos = instantes_del_dia(horario, dia) if horario else ((), ())
-    if horario is None:
-        motivos.add("horario_faltante")
     tolerancias = None
     if horario is not None and programadas:
         try:
             tolerancias = resolver_tolerancias(versiones, dia, horario.empresa, horario.tolerancias)
-        except FaltaParametro as falta:
-            motivos.add(f"falta:{falta.clave}")
+        except _ERRORES_DE_CONFIGURACION as error:
+            motivos.add(_motivo_de(error))
     ventanas = []
     if tolerancias is not None:  # TO06: solo marca lo dudoso de los bordes del dia; no suprime ni suma
         primero, ultimo = min(p.inicio for p in programadas), max(p.fin for p in programadas)
@@ -440,6 +483,9 @@ def _piezas_del_dia(dia: date, items, horarios, versiones, confirmaciones, motiv
             Intervalo(primero - tolerancias.entrada_anticipada_s, primero),
             Intervalo(ultimo, ultimo + tolerancias.salida_posterior_s),
         ]
+    # Sin tolerancias utilizables no se asume tolerancia 0 (TO02): todo lo de checadas fuera de
+    # horario queda dudoso hasta que RH lo resuelva (TO06).
+    sin_tolerancia = horario is not None and bool(programadas) and tolerancias is None
     ubicacion_fija = SIN_HORARIO if horario is None else DIA_NO_PROGRAMADO if not programadas else None
     cortes_fijos = {
         x
@@ -461,7 +507,7 @@ def _piezas_del_dia(dia: date, items, horarios, versiones, confirmaciones, motiv
             elif fuente.origen == COMPLEMENTO or ubicacion in (DENTRO_HORARIO, SIN_HORARIO):
                 estado = CONFIRMADO
             else:  # fuera de horario: lo resuelve RH; sin resolucion, la ventana de tolerancia queda dudosa
-                dudoso = fuente.origen == CHECADA and _contiene(ventanas, a)
+                dudoso = fuente.origen == CHECADA and (sin_tolerancia or _contiene(ventanas, a))
                 estado = _resolver_confirmacion(confirmaciones, a) or (PENDIENTE if dudoso else CONFIRMADO)
             piezas.append(PiezaEfectiva(
                 Intervalo(a, b), dia, dia, fuente.origen, estado, ubicacion, descanso,
@@ -474,12 +520,19 @@ def _piezas_del_dia(dia: date, items, horarios, versiones, confirmaciones, motiv
         hueco = Intervalo(antes.fin, despues.inicio)
         for d in (x for x in descansos if x.computable):
             comun = hueco.interseccion(d.intervalo)
-            if comun is not None:
-                previa = next(f for sub, f in items if f.aprobada and sub.fin == antes.fin)
-                piezas.append(PiezaEfectiva(
-                    comun, dia, dia, DESCANSO_COMPUTABLE, CONFIRMADO, DENTRO_HORARIO, COMPUTABLE,
+            if comun is None:
+                continue
+            libres = [comun]
+            for c in cubierto:  # sin pisar pendientes, no laborados ni otras fuentes
+                libres = _restar(libres, c)
+            previa = next(f for sub, f in items if f.aprobada and sub.fin == antes.fin)
+            piezas += [
+                PiezaEfectiva(
+                    libre, dia, dia, DESCANSO_COMPUTABLE, CONFIRMADO, DENTRO_HORARIO, COMPUTABLE,
                     previa.empresa, previa.reloj, None,
-                ))
+                )
+                for libre in libres
+            ]
     return piezas
 
 
@@ -514,7 +567,7 @@ def construir_intervalos_efectivos(
     - Falta de horario o de tolerancias: resultado provisional con AL12; los datos se conservan.
     Cada pieza es un segmento disjunto; T4 agrega fronteras de semana/vigencia y T5 asigna extras.
     """
-    previa = fin_de_jornada_previa(horarios, zona)
+    previa = fin_de_jornada_previa(horarios)  # cada horario en su propia zona
     cubierto: list[Intervalo] = []
     por_dia: dict[date, list] = {}
     for fuente in _fuentes(emparejados, complementos):
@@ -527,7 +580,7 @@ def construir_intervalos_efectivos(
     motivos: set[str] = set()
     piezas = []
     for dia in sorted(por_dia):
-        piezas += _piezas_del_dia(dia, por_dia[dia], horarios, versiones, confirmaciones, motivos)
+        piezas += _piezas_del_dia(dia, por_dia[dia], horarios, versiones, confirmaciones, cubierto, motivos)
     por_fecha = [
         replace(p, intervalo=parte.intervalo, fecha_real=parte.fecha_real)
         for p in piezas

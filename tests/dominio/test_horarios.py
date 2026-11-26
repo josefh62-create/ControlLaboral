@@ -261,3 +261,44 @@ def test_contexto_usa_la_empresa_del_horario_para_resolver_tolerancias():
     h = horario({0: dia(bloque(7, 16))}, empresa="CATAB")
     vers = (*VERS, *_tol(5, "AEI"), *_tol(12, "CATAB"))
     assert resolver_contexto(date(2027, 3, 1), [h], [_cal()], vers).tolerancias.entrada_tardia_s == 12 * M
+
+
+# --- Correccion T3: configuracion invalida degrada a provisional; zona del horario ---------------
+
+def test_i2_contexto_con_horarios_ambiguos_no_elige_uno_y_es_provisional():
+    a = horario({0: dia(bloque(7, 16))}, codigo="A")
+    b = horario({0: dia(bloque(8, 17))}, codigo="B")
+    ctx = resolver_contexto(date(2027, 3, 1), [a, b], [_cal()], (*VERS, *_tol()), "AEI")
+    assert ctx.provisional is True and AL12 in ctx.alertas and "horario_ambiguo" in ctx.motivos
+    assert ctx.horario is None and ctx.dia_horario is None
+
+
+def test_i2_contexto_con_calendarios_duplicados_y_tolerancia_invalida_no_aborta():
+    from Dominio.modelos import ORIGEN_PATRONAL, VersionParametro
+
+    malas = _tol()
+    malas[1] = VersionParametro(n.TOL_ENTRADA_TARDIA_S, 16 * M, Vigencia(date(2027, 1, 1)), "x", ORIGEN_PATRONAL, "AEI")
+    ctx = resolver_contexto(date(2027, 3, 1), [cinco_por_ocho_mas_seis()], [_cal(), _cal()], (*VERS, *malas), "AEI")
+    assert ctx.provisional is True and AL12 in ctx.alertas
+    assert {"calendario_ambiguo", f"tolerancia_invalida:{n.TOL_ENTRADA_TARDIA_S}"} <= set(ctx.motivos)
+    assert ctx.horario is not None and ctx.tolerancias is None and ctx.calendario is None
+
+
+def test_n3_fin_de_jornada_previa_usa_la_zona_propia_del_horario():
+    tijuana = ZoneInfo("America/Tijuana")
+    nocturno = horario({0: dia(bloque(22, 29))}, zona="America/Tijuana")
+    previa = fin_de_jornada_previa([nocturno])
+    assert previa(date(2027, 1, 4)) == instante_local(date(2027, 1, 5), hm(5), tijuana)
+    assert fin_de_jornada_previa([nocturno], tijuana)(date(2027, 1, 4)) == previa(date(2027, 1, 4))
+
+
+def test_n3_una_zona_distinta_a_la_del_horario_se_rechaza_sin_discrepar_en_silencio():
+    nocturno = horario({0: dia(bloque(22, 29))}, zona="America/Tijuana")
+    with pytest.raises(ValueError):
+        fin_de_jornada_previa([nocturno], CDMX)
+
+
+def test_i2_fin_de_jornada_previa_ignora_horarios_ambiguos():
+    a = horario({0: dia(bloque(22, 29))}, codigo="A")
+    b = horario({0: dia(bloque(22, 28))}, codigo="B")
+    assert fin_de_jornada_previa([a, b])(date(2027, 1, 4)) is None

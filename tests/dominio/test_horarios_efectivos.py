@@ -297,3 +297,83 @@ def test_no_se_pierde_ni_se_duplica_tiempo_fisico():
     assert total(res) == fisico
     ordenadas = sorted(res.piezas, key=lambda p: p.intervalo.inicio)
     assert all(a.intervalo.fin <= b.intervalo.inicio for a, b in zip(ordenadas, ordenadas[1:]))
+
+
+# --- Correccion T3 ----------------------------------------------------------------------------
+
+def test_i1_complemento_no_aprobado_dentro_de_descanso_computable_no_duplica_presencia():
+    h = horario_continuo(DescansoHorario(Intervalo(hs(12), hs(13)), True, "art. 64"))
+    comp = Complemento("C-9", Intervalo(t(LUNES, 12, 10), t(LUNES, 12, 20)), "AEI", aprobado=False)
+    res = efectivos([par(t(LUNES, 7), t(LUNES, 12)), par(t(LUNES, 13), t(LUNES, 16))], [h], complementos=[comp])
+    assert total(res) == 9 * H  # presencia 07:00-16:00, ni un segundo mas
+    assert total(res, estado=PENDIENTE) == 10 * M
+    assert total(res, origen=DESCANSO_COMPUTABLE) == 50 * M
+
+
+def test_i1_propiedad_piezas_disjuntas_y_la_presencia_cuadra_con_semilla_fija():
+    from Dominio.emparejamiento import tiempo_sin_traslape
+
+    for semilla in range(400):
+        rng = random.Random(semilla)
+        bloques = [(7 * 60, 16 * 60)] if rng.random() < 0.5 else [(7 * 60, 12 * 60), (13 * 60, 17 * 60)]
+        descansos = []
+        for a, b in bloques:
+            if rng.random() < 0.7:
+                largo = rng.choice([15, 30, 45, 60])
+                ini = rng.randrange(a + 15, b - largo - 14, 15)
+                descansos.append(DescansoHorario(Intervalo(hs(0, ini), hs(0, ini + largo)), rng.random() < 0.5))
+        dia = DiaHorario(tuple(Intervalo(hs(0, a), hs(0, b)) for a, b in bloques), tuple(descansos))
+        horario = Horario("HR", D2027, "diurna", "America/Mexico_City", {0: dia}, empresa="AEI")
+
+        def azar():
+            ini = rng.randrange(6 * 60, 19 * 60, 5)
+            return Intervalo(t(LUNES, 0, ini), t(LUNES, 0, ini + rng.randrange(10, 300, 5)))
+
+        pares = [par(i.inicio, i.fin) for i in (azar() for _ in range(rng.randint(0, 3)))]
+        comps = [Complemento(f"C{k}", azar(), "AEI", aprobado=rng.random() < 0.5) for k in range(rng.randint(0, 3))]
+        res = efectivos(pares, [horario], complementos=comps)
+
+        piezas = sorted(res.piezas, key=lambda p: p.intervalo.inicio)
+        assert all(a.intervalo.fin <= b.intervalo.inicio for a, b in zip(piezas, piezas[1:])), semilla
+        fuentes = [p.intervalo for p in pares] + [c.intervalo for c in comps]
+        unidos = tiempo_sin_traslape(fuentes)
+        relleno = total(res, origen=DESCANSO_COMPUTABLE)
+        # presencia = tiempo fisico (union) + descanso computable incorporado (plan 5.4)
+        assert total(res) == sum(i.duracion for i in unidos) + relleno, semilla
+        assert all(
+            any(u.inicio <= p.intervalo.inicio and p.intervalo.fin <= u.fin for u in unidos)
+            for p in res.piezas
+            if p.origen != DESCANSO_COMPUTABLE
+        ), semilla
+
+
+def test_i2_horarios_ambiguos_se_tratan_como_sin_horario_y_no_abortan():
+    a = Horario("A", D2027, "diurna", "America/Mexico_City", {0: DiaHorario((Intervalo(hs(7), hs(16)),))})
+    b = Horario("B", D2027, "diurna", "America/Mexico_City", {0: DiaHorario((Intervalo(hs(8), hs(17)),))})
+    res = efectivos([par(t(LUNES, 7), t(LUNES, 16))], [a, b])
+    assert res.provisional is True and AL12 in res.alertas and "horario_ambiguo" in res.motivos
+    assert {p.ubicacion for p in res.piezas} == {SIN_HORARIO} and total(res) == 9 * H
+
+
+def test_i2_tolerancia_almacenada_invalida_degrada_a_provisional_y_deja_lo_dudoso_pendiente():
+    from Dominio.modelos import VersionParametro
+
+    malas = tol(10)
+    v = malas[1]
+    malas[1] = VersionParametro(v.clave, 16 * M, v.vigencia, "x", v.origen, v.empresa)
+    pares = [par(t(LUNES, 7), t(LUNES, 12)), par(t(LUNES, 13), t(LUNES, 16, 10))]
+    res = efectivos(pares, [horario_partido()], versiones=malas)
+    assert res.provisional is True and f"tolerancia_invalida:{CLAVES_TOLERANCIA[1]}" in res.motivos
+    assert total(res) == 8 * H + 10 * M and total(res, estado=PENDIENTE) == 10 * M
+
+
+def test_gap2_sin_tolerancias_configuradas_lo_que_esta_fuera_de_horario_queda_pendiente():
+    pares = [par(t(LUNES, 7), t(LUNES, 12)), par(t(LUNES, 13), t(LUNES, 17))]
+    res = efectivos(pares, [horario_partido()], versiones=())
+    assert res.provisional is True and AL12 in res.alertas
+    assert f"falta:{CLAVES_TOLERANCIA[0]}" in res.motivos
+    assert total(res, ubicacion=FUERA_HORARIO, estado=PENDIENTE) == H
+    assert total(res, ubicacion=FUERA_HORARIO, estado=CONFIRMADO) == 0
+    assert total(res, ubicacion=DENTRO_HORARIO, estado=CONFIRMADO) == 8 * H
+    conf = [Confirmacion(Intervalo(t(LUNES, 16), t(LUNES, 17)), True, "trabajo")]  # RH lo resuelve
+    assert total(efectivos(pares, [horario_partido()], versiones=(), confirmaciones=conf), estado=PENDIENTE) == 0

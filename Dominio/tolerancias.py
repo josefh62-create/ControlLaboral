@@ -38,7 +38,11 @@ CLAVES_TOLERANCIA = (
 
 
 class ToleranciaInvalida(ValueError):
-    """Valor fuera de TO01 (entero de 0 a 15 minutos)."""
+    """Valor fuera de TO01 (entero de 0 a 15 minutos); `clave` nombra el parametro si se conoce."""
+
+    def __init__(self, mensaje: str, clave: str | None = None):
+        super().__init__(mensaje)
+        self.clave = clave
 
 
 def validar_tolerancia_minutos(valor) -> int:
@@ -97,10 +101,14 @@ def resolver_tolerancias(versiones, fecha: date, empresa: str | None = None, hor
     """
     if horario is not None:
         return horario
-    valores = [
-        resolver_vigente(versiones, clave, fecha, ORIGEN_PATRONAL, empresa).valor
-        for clave in CLAVES_TOLERANCIA
-    ]
+    valores = []
+    for clave in CLAVES_TOLERANCIA:
+        valor = resolver_vigente(versiones, clave, fecha, ORIGEN_PATRONAL, empresa).valor
+        try:
+            _validar_segundos(valor)
+        except ToleranciaInvalida as error:
+            raise ToleranciaInvalida(f"{clave}: {error}", clave) from error
+        valores.append(valor)
     return Tolerancias(*valores)
 
 

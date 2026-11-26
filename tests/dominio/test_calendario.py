@@ -238,3 +238,48 @@ def test_jornada_logica_no_depende_del_orden_de_entrada():
     a = emparejado(ep(date(2027, 1, 4), 22), ep(date(2027, 1, 5), 5))
     b = emparejado(ep(date(2027, 1, 6), 7), ep(date(2027, 1, 6), 15))
     assert asignar_jornada_logica([a, b], CDMX) == asignar_jornada_logica([b, a], CDMX)
+
+
+# --- Correccion T3: decision Q-A, art. 74 desde la semilla legal, configuracion ambigua -------
+
+def test_qa_semilla_inicio_semana_cita_la_decision_del_propietario_y_es_por_empresa():
+    (v,) = [x for x in n.SEMILLA_PATRONAL if x.clave == n.SEMANA_INICIO_DIA]
+    assert v.valor == 0 and v.empresa is None  # lunes, general; cada empresa puede tener la suya
+    assert "Decision del propietario 26/11/2026" in v.fuente and "lunes" in v.fuente
+    assert dia_inicio_semana(n.SEMILLA_PATRONAL, date(2027, 3, 3), "AEI") == 0
+    assert dia_inicio_semana(n.SEMILLA_PATRONAL, date(2027, 3, 3), "CATAB") == 0
+
+
+def test_n1_art74_sale_de_la_semilla_legal_versionada():
+    from Dominio.modelos import ORIGEN_LEGAL
+
+    claves = [v for v in n.SEMILLA_LEGAL if v.clave.startswith("art74_")]
+    assert claves and all(v.origen == ORIGEN_LEGAL and "art. 74" in v.fuente for v in claves)
+    with pytest.raises(n.FaltaParametro):
+        sugerir_descansos_obligatorios(2027, versiones=())
+
+
+def test_n1_la_regla_de_transmision_se_puede_sustituir_por_otra_version():
+    from Dominio.modelos import VersionParametro, Vigencia
+
+    otras = [v for v in n.SEMILLA_LEGAL if v.clave != n.ART74_ANIO_BASE_TRANSMISION]
+    otras.append(VersionParametro(n.ART74_ANIO_BASE_TRANSMISION, 2027, Vigencia(date(2024, 1, 1)), "prueba"))
+    assert date(2027, 10, 1) in {s.fecha for s in sugerir_descansos_obligatorios(2027, versiones=otras)}
+    assert date(2027, 10, 1) not in _fechas(2027)
+
+
+def test_n2_dia_de_empresa_sin_trabajo_no_es_ausencia():
+    c = _cl(date(2027, 7, 2))  # programado, dia de empresa, sin trabajo
+    assert "dia_empresa" in c.etiquetas and c.ausencia is False
+
+
+def test_i2_dos_calendarios_del_mismo_anio_degradan_a_provisional_sin_abortar():
+    from Dominio.calendario import CalendarioAmbiguo
+
+    dobles = [_cal(), _cal()]
+    with pytest.raises(CalendarioAmbiguo):
+        calendario_del_anio(dobles, 2027)
+    c = clasificar_dia(date(2027, 5, 1), dobles, programado=True, descanso_semanal=False, trabajado_s=H)
+    assert c.provisional is True and AL12 in c.alertas and "calendario_ambiguo" in c.motivos
+    assert "trabajado" in c.etiquetas
+    assert calendario_siguiente_pendiente(date(2027, 12, 1), [_cal(2028), _cal(2028)]) is True
