@@ -110,6 +110,7 @@ Catálogo versionado de reglas legales. Campos sugeridos (adaptar a tablas exist
 - NL04: si falta una versión aplicable, bloquear únicamente el cálculo definitivo; conservar registros y mostrar incidencia.
 - NL05: los límites legales deben ser independientes de límites patronales más restrictivos.
 - NL06: no confundir el límite art. 66 con el límite total art. 68; ambos generan alertas distintas.
+- NL07 (principio del propietario, 26/11/2026): V2 debe contemplar **todas las posibilidades que prevé la LFT**, aunque hoy la empresa no las tenga: jornadas diurna, nocturna y mixta; jornada parcial o reducida; trabajadores menores de edad con su régimen especial (restricciones de jornada, prohibición de tiempo extra y de trabajo nocturno, según la LFT); descanso semanal y obligatorio trabajado; y demás regímenes especiales. Que un caso no se use hoy no justifica dejarlo fuera del modelo; se habilita por configuración. El contenido exacto de cada régimen (p. ej. arts. 22, 60, 173–180 LFT) debe transcribirse y verificarse en `Documentacion/00` antes de implementarlo.
 
 ### 4.2 Horarios y asignaciones (HO)
 
@@ -343,6 +344,7 @@ Revisar los existentes y ampliar solo si es necesario: revisión diaria/semanal,
 
 - Semana que cruza 01/01/2027 (por ejemplo 28/12/2026–03/01/2027 si la semana inicia lunes): aplicar horarios/normas por fecha, conservar semana completa y no reiniciar acumulados artificialmente. La regla exacta de tope semanal transitorio requiere validación jurídica; no imponer prorrateo ni aplicar 46/48 a toda la semana sin fundamento. Si no hay criterio aprobado, resultado provisional con alerta y evidencia intacta.
 - Turno que cruza medianoche o una vigencia: preservar jornada lógica para límites diarios y segmentar fechas para condiciones legales; no duplicar minutos.
+- Jornadas prolongadas actuales (Q14, propietario, 26/11/2026): hoy el turno inicia a las 7:00 y el mismo trabajador puede seguir hasta las 22:00; la empresa pretende terminar esa práctica. Desde 2027, con 8 h ordinarias y 1 h de comida no computable, el máximo legal del día es 20:00 (art. 66: 4 h extra diarias). V2 registra todo el tiempo trabajado y alerta el exceso del art. 66; no lo recorta. El tramo 20:00–22:00 cae en periodo nocturno: confirmar con el asesor que, siendo extra, no cambia el tipo de jornada.
 - Cambio de horario a mitad de semana: aplicar asignación vigente y validar el total; no reemplazar histórico.
 - Horarios flexibles, redistribuciones acordadas, guardias, emergencias, menores y regímenes especiales: definir reglas y pruebas específicas si existen; no habilitar excepciones genéricas sin aprobación.
 - Descanso semanal/festivo trabajado: identificar concurrencias con tiempo extraordinario; criterio de clasificación validado por RH/jurídico.
