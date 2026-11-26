@@ -78,7 +78,7 @@ class ChecadaMarcada:
     marcas: frozenset[str] = field(default_factory=frozenset)
 
 
-def _clave_orden(c: Checada):
+def clave_orden(c: Checada):
     # Orden total y determinista: el instante manda; el resto solo desempata para que
     # cualquier permutacion de la entrada produzca exactamente la misma salida (P-32).
     return (
@@ -89,7 +89,7 @@ def _clave_orden(c: Checada):
 
 def ordenar_checadas(checadas) -> tuple[Checada, ...]:
     """Tupla ordenada por instante real (no por importacion); no descarta ninguna (P-32)."""
-    return tuple(sorted(checadas, key=_clave_orden))
+    return tuple(sorted(checadas, key=clave_orden))
 
 
 def marcar_checadas(
