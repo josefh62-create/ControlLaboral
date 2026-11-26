@@ -32,7 +32,7 @@ def _es_subruta(ruta: Path, base: Path) -> bool:
 def resolver_carpeta_datos(
     entorno: dict | None = None, raiz: Path | None = None
 ) -> Path:
-    """Devuelve la carpeta de datos segun el entorno.
+    r"""Devuelve la carpeta de datos segun el entorno.
 
     1. CONTROLLABORAL_DATA, si esta definida.
     2. Copia instalada bajo %LOCALAPPDATA%\Programs\MisApps\:
