@@ -4,7 +4,7 @@
 from dataclasses import dataclass
 from datetime import date
 
-from Dominio.modelos import ORIGEN_LEGAL, VersionParametro, Vigencia
+from Dominio.modelos import ORIGEN_LEGAL, ORIGEN_PATRONAL, VersionParametro, Vigencia
 from Dominio.tiempo import horas_a_segundos, minutos_a_segundos
 
 
@@ -119,6 +119,10 @@ EDAD_MINIMA_TRABAJO = "edad_minima_trabajo"
 EDAD_FIN_REGIMEN_15_16 = "edad_fin_regimen_15_16"
 EDAD_MAYORIA = "edad_mayoria"
 
+# Politica patronal de checadas (origen "patronal", NL05): no son limites legales.
+TRASLADO_MAX_S = "traslado_max_s"
+VENTANA_DUPLICADOS_S = "ventana_duplicados_s"
+
 # Alerta que dispara rebasar cada limite (plan 4.4); art. 66 y 68 distintos (NL06).
 ALERTA_POR_LIMITE = {
     ORDINARIA_SEMANAL_S: "AL01",
@@ -196,4 +200,26 @@ SEMILLA_LEGAL: tuple[VersionParametro, ...] = (
     _v(EDAD_MINIMA_TRABAJO, 15, _D2026, None, "LFT arts. 22 y 22 Bis"),
     _v(EDAD_FIN_REGIMEN_15_16, 16, _D2026, None, "LFT arts. 22 y 177"),
     _v(EDAD_MAYORIA, 18, _D2026, None, "LFT arts. 173 a 180 (menores de dieciocho anos)"),
+)
+
+# Politica patronal (DATOS). Valores iniciales sujetos a cambio por version nueva.
+SEMILLA_PATRONAL: tuple[VersionParametro, ...] = (
+    # Decision del propietario 26/11/2026 (plan 5.1 paso 4); respaldo: art. 58 LFT
+    # (tiempo a disposicion del patron, doc. 00); requiere validacion del asesor laboral.
+    VersionParametro(
+        TRASLADO_MAX_S,
+        _M(60),
+        Vigencia(_D2026),
+        "Decision del propietario 26/11/2026 (plan 5.1-4); art. 58 LFT, validar con asesor",
+        ORIGEN_PATRONAL,
+    ),
+    # Valor documentado de V1 (R006: descartaba checadas a <= 30 min); doc. 03 Q-D lo
+    # propone como valor inicial configurable. V2 solo marca, nunca descarta.
+    VersionParametro(
+        VENTANA_DUPLICADOS_S,
+        _M(30),
+        Vigencia(_D2026),
+        "V1 helpers.py:520-526 (30 min), doc. 03 R006 y Q-D; configurable",
+        ORIGEN_PATRONAL,
+    ),
 )
