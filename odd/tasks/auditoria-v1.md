@@ -14,7 +14,7 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - [x] T1 — Inventario y diagnóstico A01–A10 → `Documentacion/01_AUDITORIA_SISTEMA_ACTUAL.md` (ruta: delegado, disparador 4+ archivos)
 - [x] T2 — Matriz de reutilización inicial → `Documentacion/13_MATRIZ_DE_REUTILIZACION.md` (ruta: delegado junto con T1)
 - [x] T3 — Revisión del orquestador y presentación al usuario
-- [ ] T3b — Respuestas del propietario a Q01–Q15 (bloquea decisiones de R001, R006–R008, R011–R014)
+- [x] T3b — Respuestas del propietario a Q01–Q15 (bloquea decisiones de R001, R006–R008, R011–R014)
 - [ ] T4 — Propuesta de arquitectura V2 (pendiente de aprobación del diagnóstico)
 
 ## Criterios de aceptación
@@ -42,4 +42,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: Q12 resuelta: arranque en blanco, sin migrar BD de V1; catálogo de empleados importado una vez desde Excel (plan §13.2).
 - 2026-11-26: Q13 resuelta: una PC, 40–200 empleados por empresa; SQLite local, cuenta por usuario (plan §22.1).
 - 2026-11-26: Q14 resuelta: jornada 7:00–22:00 actual (alerta art. 66); principio NL07: contemplar todos los regímenes de la LFT.
-- Siguiente: Q15; luego T4.
+- 2026-11-26: Q15 resuelta: Herramientas → Respaldar/Restaurar, respaldo automático, destino elegido por el usuario. T3b completa (Q01–Q15).
+- Siguiente: transcribir artículos LFT pendientes (doc 14 §6); T4 propuesta de arquitectura.

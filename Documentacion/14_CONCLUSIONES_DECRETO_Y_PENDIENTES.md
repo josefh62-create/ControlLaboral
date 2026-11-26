@@ -61,9 +61,10 @@ Base: texto literal del decreto en `00_FUENTE_LEGAL_DECRETO_2026-05-01.md`. Inte
 - **Q12 resuelta (26/11/2026):** V2 empieza de cero; las empresas arrancan en blanco y no se migran las BD de V1; solo se reutiliza el código que funcione. Única excepción: importación única del catálogo de empleados desde Excel, con unión de personas repetidas entre empresas confirmada por RH (plan §13.2).
 - **Q13 resuelta (26/11/2026):** una sola PC; de 40 a 200 empleados por empresa. SQLite local es suficiente; cada usuario entra con su propia cuenta en esa PC; el respaldo es crítico (plan §22.1).
 - **Q14 resuelta (26/11/2026):** turno desde las 7:00; hoy el mismo trabajador puede seguir hasta las 22:00, práctica que se pretende terminar (desde 2027 rebasa en 2 h el límite diario del art. 66: V2 registra todo y alerta). No se esperan menores de edad (alerta si la CURP o la fecha de nacimiento indican menos de 18). **Principio NL07:** V2 contempla todas las posibilidades de la LFT (nocturna, mixta, parcial, menores y demás regímenes) aunque hoy no se usen; los textos legales correspondientes deben transcribirse antes de implementarlos.
+- **Q15 resuelta (26/11/2026):** V1 no tiene función de respaldo y los Excel no se respaldan. V2 incluye Herramientas → Respaldar/Restaurar de toda la información laboral que la ley exija conservar, respaldo automático y destino elegido por el usuario (USB, OneDrive, nube…). Plazo de conservación pendiente de transcribir arts. 804–805 LFT y disposiciones STPS (plan §22.3).
 
 ## 6. Preguntas pendientes
 
 1. ¿Qué otros esquemas de jornada usarán además de 5 × 8 + 6 (turnos nocturnos, 4 × 12, etc.)? ¿Cuáles tendrán acuerdo art. 58 firmado? (Relacionada con Q14.)
 2. Validar con el asesor laboral la lectura (A)/(B) y el criterio de Q05 cuando haya dictamen o reglamento STPS.
-3. Siguientes preguntas de la auditoría: Q15 (ver `01_AUDITORIA_SISTEMA_ACTUAL.md` §9).
+3. Transcribir y verificar en el documento 00 los artículos de la LFT no reformados que el diseño ya usa: 58 (1.er párrafo), 60, 74, 173–180 (menores), 804–805 (conservación).
