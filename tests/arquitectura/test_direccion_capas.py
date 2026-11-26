@@ -16,7 +16,8 @@ PROHIBIDO_POR_CAPA = {
     "Database": {
         "PySide6", "Modelos", "Servicios", "Repositorios", "Vistas", "Controladores", "main",
     },
-    "Dominio": APP | {"PySide6", "sqlite3"},
+    # Dominio puede importarse a si mismo (absoluto o relativo), nada mas de la app.
+    "Dominio": (APP - {"Dominio"}) | {"PySide6", "sqlite3"},
 }
 
 
@@ -53,3 +54,10 @@ def test_importacion_permitida_no_se_marca(tmp_path):
         "from Database.unidad_trabajo import UnidadTrabajo\nimport re\n", encoding="utf-8"
     )
     assert revisar_capa("Modelos", tmp_path) == []
+
+
+def test_dominio_puede_importarse_a_si_mismo(tmp_path):
+    (tmp_path / "motor.py").write_text(
+        "from Dominio.tiempo import a_segundos\nfrom . import modelos\n", encoding="utf-8"
+    )
+    assert revisar_capa("Dominio", tmp_path) == []
