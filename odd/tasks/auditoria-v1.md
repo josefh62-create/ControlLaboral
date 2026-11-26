@@ -33,4 +33,5 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-26: rama docs/correcciones-q05-q08: ejemplo de compensación corregido, regla de horario incompatible (remanente a los últimos minutos programados + HO03, decisión del propietario), fechas 25→24/11, docs 01 §9, 13 §D y 14 §4.3/§6 actualizados.
 - 2026-11-26: Q08 resuelta: «Empresa base» = patrón IMSS del trabajador (AEI, primera empresa); patrón y centro de trabajo separados con vigencia (plan §13.1).
 - 2026-11-26: varias empresas por trabajador: empleado único, emparejamiento sobre secuencia unificada de relojes, acumulación por trabajador+patrón+semana (plan §5.1-4, §5.3, §13.1).
-- Siguiente: decidir tiempo de traslado entre centros; Q09–Q15; luego T4.
+- 2026-11-26: traslado entre empresas = tiempo efectivo etiquetado; > 60 min configurable → pendiente de revisión (interpretación art. 58, validar con asesor).
+- Siguiente: Q09–Q15; luego T4.
