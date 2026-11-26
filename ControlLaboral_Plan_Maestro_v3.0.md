@@ -293,6 +293,7 @@ Adaptar las siguientes entidades lógicas a la estructura existente; no crear ta
 - Usar claves e índices por trabajador/fecha y restricciones de integridad de vigencias. Procesar transaccionalmente; evitar revisiones concurrentes inconsistentes.
 - Conservar fecha local e instante inequívoco, considerando zonas mexicanas y cambios históricos de horario.
 - Control de acceso según perfiles existentes: consulta, revisión, autorización y configuración legal. Registrar modificaciones y exportaciones relevantes.
+- Usuarios iniciales (decisión del propietario, 26/11/2026): dos por empresa, **RH** y **autorizador** (el designado por la empresa, RE03). El autorizador aprueba el tiempo extra y es quien tiene autoridad sobre las checadas faltantes. «Modificar checadas» se implementa siempre como aclaración del módulo de incidencias (cap. 14), nunca como edición o alta de checadas del reloj. Los roles se asignan por empresa y vigencia; el modelo debe admitir más usuarios y roles después.
 - No replicar plantillas biométricas si basta con el identificador del reloj. Proteger datos personales y respaldos; definir retención conforme a obligaciones aplicables, sin inventar un plazo único.
 - Cierres: una corrección posterior genera nueva revisión, no sobrescribe silenciosamente el resultado aprobado. Mostrar original, diferencia y versión recalculada.
 
@@ -312,9 +313,26 @@ Ejemplo: 16:00–16:25, extra confirmada; 06:50–07:00, pendiente de confirmar;
 
 Columnas: día, horario previsto, horas programadas, checadas, normales, dobles, triples, extras pendientes de clasificación, descanso/festivo trabajado, faltante, pendiente, acumulados y alertas. Resumen de límites legales y contractuales, versión y fecha de revisión. Mostrar HH:mm, no confundir 7.40 decimal con 7 h 40 min.
 
+**Código de colores por día** (se conserva el de V1, `tiempo_extra/Vistas/vista_tiempo_extra.py` y `ClasesComunes/exportar_reporte.py`, con ajustes; decisión del propietario, 26/11/2026). Se aplica igual en pantalla y en el reporte impreso/exportado, siempre con leyenda:
+
+| Prioridad | Color (fondo / texto) | Situación en V2 |
+|---|---|---|
+| 1 | Amarillo `#FFFF00` / negro | Falta la checada de entrada o de salida (omisión) |
+| 2 | Azul `#1313E2` / blanco | Hay una aclaración administrativa (cap. 14); la checada original no se modifica. En el reporte solo se pinta el dato aclarado |
+| 3 | Rojo `#FF0000` / amarillo | Falta: día laborable sin checadas ni aclaración |
+| 4 | Naranja `#C76E00` / blanco | Día corto: trabajó menos que su horario; el faltante se compensa dentro de la semana (§5.2) |
+| 5 | Morado `#7030A0` / blanco (provisional) | Incluye tiempo de traslado entre empresas (§5.1 paso 4) |
+| — | Verde claro | Hay tiempo extra (solo pantalla) |
+| — | Gris | Día de descanso (en el reporte, tinte suave en fin de semana) |
+| — | Rojo claro | Dato capturado inválido (solo pantalla) |
+
+En pantalla, estos colores deben conservar legibilidad y contraste en modo claro y oscuro (variantes por tema); en el reporte impreso se usan los valores fijos de la tabla.
+
 ### 7.4 Reportes y exportaciones
 
 Revisar los existentes y ampliar solo si es necesario: revisión diaria/semanal, excepciones, exceso de jornada, límites próximos, horarios incompatibles, checadas originales y ajustes, evidencia individual de inicio/fin de jornada, diferencias de recalculación y exportación de totales para sistemas externos. Conservar contratos de integración; si cambian columnas o unidades, versionar exportación. No incluir cálculo de nómina.
+
+**Firmas del reporte de tiempo extra** (decisión del propietario, 26/11/2026): además de la autorización en el sistema, el reporte lleva cuatro firmas: (1) quien autoriza el tiempo extra, (2) quien lo elaboró, (3) Vo.Bo. de la Dirección y (4) el departamento de RH, que lo revisa. El reporte muestra nombre y cargo de cada firmante y el estado de cada firma; mientras falte alguna, el reporte queda pendiente de validación.
 
 ## 8. Transiciones y casos que requieren decisión
 
@@ -469,7 +487,9 @@ El patrón y el centro de trabajo son datos distintos: un trabajador puede checa
 
 ## 14. Integridad de checadas y omisiones (ampliación v1.1)
 
-**Decisión confirmada:** la aplicación actual no permite modificar entradas/salidas ni agregar checadas manuales. Mantener esa restricción sobre los registros originales, tanto en interfaz como en servicios, API y base de datos. No habilitar edición directa del reloj ni de sus registros importados. Verificar permisos, integridad de lotes, trazabilidad de origen, respaldo y restauración. La importación automática de registros auténticos del dispositivo sigue permitida.
+**Corrección (auditoría, 26/11/2026):** a diferencia de lo que decía esta sección, V1 **sí** permite modificar a mano entradas/salidas en la captura de tiempo extra (se marcan en azul y se registran en la bitácora `log_alteraciones_reloj`; ver `Documentacion/01` y matriz R022).
+
+**Decisión confirmada para V2:** no permitir modificar entradas/salidas ni agregar checadas manuales. Mantener esa restricción sobre los registros originales, tanto en interfaz como en servicios, API y base de datos. No habilitar edición directa del reloj ni de sus registros importados. Verificar permisos, integridad de lotes, trazabilidad de origen, respaldo y restauración. La importación automática de registros auténticos del dispositivo sigue permitida.
 
 **Requisito aprobado:** módulo separado de incidencias y aclaraciones, que no crea checadas de reloj. Para los registros complementarios, almacenar en entidad distinta: empleado, fecha, movimiento omitido o cuestionado, hora declarada (si existe), motivo, fuente/evidencia, usuario y fecha de captura, autorizador y fecha, estado pendiente/autorizado/rechazado/revocado, referencia al original cuando exista y conformidad/inconformidad del trabajador. Los estados se registran como eventos auditables; revocar o rectificar mediante nuevos eventos, no eliminar historial. Los complementos aprobados y respaldados por el acta con ambas firmas (véase capítulo 16) pueden alimentar una vista derivada de jornada, identificados explícitamente como administrativos. Los pendientes no se convierten en horas confirmadas. Mientras falte evidencia o alguna firma, mantener la aclaración pendiente de validación definitiva, sin inventar una salida ni ocultar trabajo acreditado.
 
