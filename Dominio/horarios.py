@@ -13,13 +13,21 @@ incompatible se ADVIERTE, nunca se aprueba en silencio ni se recorta; HO06 sin h
 resultado es provisional (AL12) y NO se inventan 8 h ni 48 h (P-33).
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, tzinfo
 from types import MappingProxyType
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from Dominio import normatividad as n
-from Dominio.calendario import AL12, CalendarioAnual, calendario_del_anio
+from Dominio.calendario import (
+    AL12,
+    CalendarioAnual,
+    asignar_dia_logico,
+    calendario_del_anio,
+    dividir_por_fecha_real,
+)
+from Dominio.checadas import clave_orden
+from Dominio.emparejamiento import TRASLADO, tiempo_sin_traslape
 from Dominio.modelos import Vigencia
 from Dominio.normatividad import FaltaParametro, resolver_vigente
 from Dominio.regimenes import REGIMENES, Regimen, obtener_regimen, tope_diario_s
@@ -275,4 +283,256 @@ def resolver_contexto(fecha: date, horarios, calendarios, versiones, empresa: st
     return ContextoDia(
         fecha, horario, dia, regimen, tolerancias, calendario, semanal, diario,
         bool(motivos), (AL12,) if motivos else (), tuple(motivos),
+    )
+
+
+# ---------------------------------------------------------------------------
+# Paso 6: intervalos efectivos (plan 5.2)
+# ---------------------------------------------------------------------------
+
+# Origen de cada pieza.
+CHECADA = "checada"
+ORIGEN_TRASLADO = "traslado"
+COMPLEMENTO = "complemento"
+DESCANSO_COMPUTABLE = "descanso_computable"
+# Estado: solo `confirmado` es tiempo efectivo; `pendiente` y `no_laborado` se conservan visibles.
+CONFIRMADO = "confirmado"
+PENDIENTE = "pendiente"
+NO_LABORADO = "no_laborado"
+DESCANSO_NO_COMPUTABLE = "descanso_no_computable"
+# Ubicacion respecto del horario del dia logico (para que T4/T5 segmenten y hallen el exceso).
+DENTRO_HORARIO = "dentro_de_horario"
+FUERA_HORARIO = "fuera_de_horario"
+DIA_NO_PROGRAMADO = "dia_no_programado"  # hay horario pero ese dia no tiene programacion: todo es exceso
+SIN_HORARIO = "sin_horario"  # no hay horario vigente (HO06): sin clasificar, resultado provisional
+# Descanso en el que cae la pieza.
+COMPUTABLE = "computable"
+NO_COMPUTABLE = "no_computable"
+
+
+@dataclass(frozen=True)
+class Complemento:
+    """Movimiento administrativo (p. ej. contingencia, plan 17) con su procedencia explicita.
+
+    Solo el `aprobado` cuenta como tiempo; uno no aprobado se conserva como pendiente.
+    """
+
+    id: str
+    intervalo: Intervalo  # segundos de epoch
+    empresa: str | None = None
+    aprobado: bool = False
+    origen: str = "ADMINISTRATIVO_CONTINGENCIA"
+
+
+@dataclass(frozen=True)
+class Confirmacion:
+    """Resolucion de RH sobre tiempo fuera de horario: `trabajado` False = solo presencia (TO06)."""
+
+    intervalo: Intervalo  # segundos de epoch
+    trabajado: bool
+    motivo: str = ""
+
+
+@dataclass(frozen=True)
+class PiezaEfectiva:
+    intervalo: Intervalo
+    dia_logico: date
+    fecha_real: date
+    origen: str
+    estado: str
+    ubicacion: str
+    descanso: str | None = None
+    empresa: str | None = None
+    reloj: str | None = None
+    referencia: str | None = None  # id del complemento, si lo hay
+
+
+@dataclass(frozen=True)
+class ResultadoEfectivo:
+    piezas: tuple[PiezaEfectiva, ...] = ()
+    provisional: bool = False
+    alertas: tuple[str, ...] = ()
+    motivos: tuple[str, ...] = ()
+
+    def total_s(self, estado: str) -> int:
+        return sum(p.intervalo.duracion for p in self.piezas if p.estado == estado)
+
+    @property
+    def confirmado_s(self) -> int:
+        return self.total_s(CONFIRMADO)
+
+    @property
+    def pendiente_s(self) -> int:
+        return self.total_s(PENDIENTE)
+
+
+@dataclass(frozen=True)
+class _Fuente:
+    intervalo: Intervalo
+    origen: str
+    aprobada: bool
+    empresa: str | None
+    reloj: str | None
+    referencia: str | None
+    orden: tuple
+
+
+def _fuentes(emparejados, complementos) -> list[_Fuente]:
+    fuentes = []
+    for e in emparejados:
+        traslado = e.etiqueta == TRASLADO
+        origen_ck = e.hasta if traslado else e.desde  # el traslado se atribuye a la empresa destino
+        fuentes.append(_Fuente(
+            e.intervalo, ORIGEN_TRASLADO if traslado else CHECADA, True, origen_ck.empresa, origen_ck.reloj,
+            None, (0, e.intervalo.inicio, e.intervalo.fin, clave_orden(e.desde), clave_orden(e.hasta)),
+        ))
+    for c in complementos:
+        fuentes.append(_Fuente(
+            c.intervalo, COMPLEMENTO, c.aprobado, c.empresa, None, c.id,
+            (1 if c.aprobado else 2, c.intervalo.inicio, c.intervalo.fin, c.id),
+        ))
+    return sorted(fuentes, key=lambda f: f.orden)
+
+
+def _restar(partes: list[Intervalo], cubierto: Intervalo) -> list[Intervalo]:
+    resto = []
+    for p in partes:
+        comun = p.interseccion(cubierto)
+        if comun is None:
+            resto.append(p)
+            continue
+        if p.inicio < comun.inicio:
+            resto.append(Intervalo(p.inicio, comun.inicio))
+        if comun.fin < p.fin:
+            resto.append(Intervalo(comun.fin, p.fin))
+    return resto
+
+
+def _contiene(intervalos, instante: int) -> bool:
+    return any(i.contiene(instante) for i in intervalos)
+
+
+def _resolver_confirmacion(confirmaciones, instante: int) -> str | None:
+    aplicables = [c.trabajado for c in confirmaciones if c.intervalo.contiene(instante)]
+    if not aplicables:
+        return None
+    if all(aplicables):
+        return CONFIRMADO
+    return NO_LABORADO if not any(aplicables) else PENDIENTE  # resoluciones contradictorias: pendiente
+
+
+def _piezas_del_dia(dia: date, items, horarios, versiones, confirmaciones, motivos: set[str]) -> list[PiezaEfectiva]:
+    """Piezas de un dia logico. `items`: (subintervalo, fuente) ya sin segundos repetidos."""
+    horario = resolver_horario(horarios, dia)
+    programadas, descansos = instantes_del_dia(horario, dia) if horario else ((), ())
+    if horario is None:
+        motivos.add("horario_faltante")
+    tolerancias = None
+    if horario is not None and programadas:
+        try:
+            tolerancias = resolver_tolerancias(versiones, dia, horario.empresa, horario.tolerancias)
+        except FaltaParametro as falta:
+            motivos.add(f"falta:{falta.clave}")
+    ventanas = []
+    if tolerancias is not None:  # TO06: solo marca lo dudoso de los bordes del dia; no suprime ni suma
+        primero, ultimo = min(p.inicio for p in programadas), max(p.fin for p in programadas)
+        ventanas = [
+            Intervalo(primero - tolerancias.entrada_anticipada_s, primero),
+            Intervalo(ultimo, ultimo + tolerancias.salida_posterior_s),
+        ]
+    ubicacion_fija = SIN_HORARIO if horario is None else DIA_NO_PROGRAMADO if not programadas else None
+    cortes_fijos = {
+        x
+        for i in (*programadas, *ventanas, *(d.intervalo for d in descansos), *(c.intervalo for c in confirmaciones))
+        for x in (i.inicio, i.fin)
+    }
+    piezas = []
+    for sub, fuente in items:
+        cortes = sorted({sub.inicio, sub.fin} | {c for c in cortes_fijos if sub.inicio < c < sub.fin})
+        for a, b in zip(cortes, cortes[1:]):
+            ubicacion = ubicacion_fija or (DENTRO_HORARIO if _contiene(programadas, a) else FUERA_HORARIO)
+            descanso = next(
+                (COMPUTABLE if d.computable else NO_COMPUTABLE for d in descansos if d.intervalo.contiene(a)), None
+            )
+            if descanso == NO_COMPUTABLE:
+                estado = DESCANSO_NO_COMPUTABLE
+            elif not fuente.aprobada:
+                estado = PENDIENTE
+            elif fuente.origen == COMPLEMENTO or ubicacion in (DENTRO_HORARIO, SIN_HORARIO):
+                estado = CONFIRMADO
+            else:  # fuera de horario: lo resuelve RH; sin resolucion, la ventana de tolerancia queda dudosa
+                dudoso = fuente.origen == CHECADA and _contiene(ventanas, a)
+                estado = _resolver_confirmacion(confirmaciones, a) or (PENDIENTE if dudoso else CONFIRMADO)
+            piezas.append(PiezaEfectiva(
+                Intervalo(a, b), dia, dia, fuente.origen, estado, ubicacion, descanso,
+                fuente.empresa, fuente.reloj, fuente.referencia,
+            ))
+    # Descanso computable (art. 63/64): cuenta aunque el trabajador haya checado salida, si hay
+    # trabajo confirmado a ambos lados del hueco.
+    trabajado = tiempo_sin_traslape([sub for sub, f in items if f.aprobada])
+    for antes, despues in zip(trabajado, trabajado[1:]):
+        hueco = Intervalo(antes.fin, despues.inicio)
+        for d in (x for x in descansos if x.computable):
+            comun = hueco.interseccion(d.intervalo)
+            if comun is not None:
+                previa = next(f for sub, f in items if f.aprobada and sub.fin == antes.fin)
+                piezas.append(PiezaEfectiva(
+                    comun, dia, dia, DESCANSO_COMPUTABLE, CONFIRMADO, DENTRO_HORARIO, COMPUTABLE,
+                    previa.empresa, previa.reloj, None,
+                ))
+    return piezas
+
+
+def _fusionar(piezas: list[PiezaEfectiva]) -> list[PiezaEfectiva]:
+    """Une piezas contiguas que solo difieren en el intervalo (menos fragmentos, mismo tiempo)."""
+    fusion: list[PiezaEfectiva] = []
+    for p in sorted(piezas, key=lambda x: (x.intervalo.inicio, x.intervalo.fin, x.origen, x.estado)):
+        ultima = fusion[-1] if fusion else None
+        if ultima is not None and ultima.intervalo.fin == p.intervalo.inicio and (
+            replace(ultima, intervalo=p.intervalo) == p
+        ):
+            fusion[-1] = replace(ultima, intervalo=Intervalo(ultima.intervalo.inicio, p.intervalo.fin))
+        else:
+            fusion.append(p)
+    return fusion
+
+
+def construir_intervalos_efectivos(
+    emparejados, horarios, zona: tzinfo, *, versiones=(), complementos=(), confirmaciones=()
+) -> ResultadoEfectivo:
+    """Paso 6: tiempo efectivo por pieza, con su dia logico, fecha real y ubicacion en el horario.
+
+    - Descansos del horario (Q03, «descanso segun horario, sin checada»): el no computable se
+      resta SOLO donde cae dentro de un intervalo trabajado (queda como pieza
+      `descanso_no_computable`); el computable se conserva y, si el trabajador checo salida, se
+      incorpora el tramo del hueco que cubre el descanso.
+    - Complementos aprobados entran con su origen; los no aprobados quedan pendientes. Ningun
+      segundo se cuenta dos veces (las checadas tienen prioridad).
+    - La tolerancia NO cambia el tiempo fisico (TO04): solo marca `pendiente` el tiempo fuera de
+      horario pegado al inicio/fin del dia, dentro de la tolerancia, mientras RH no confirme si fue
+      trabajo (`Confirmacion`). Mas alla de la tolerancia se cuenta como exceso confirmado.
+    - Falta de horario o de tolerancias: resultado provisional con AL12; los datos se conservan.
+    Cada pieza es un segmento disjunto; T4 agrega fronteras de semana/vigencia y T5 asigna extras.
+    """
+    previa = fin_de_jornada_previa(horarios, zona)
+    cubierto: list[Intervalo] = []
+    por_dia: dict[date, list] = {}
+    for fuente in _fuentes(emparejados, complementos):
+        dia = asignar_dia_logico(fuente.intervalo, zona, previa)
+        restos = [fuente.intervalo]
+        for c in cubierto:
+            restos = _restar(restos, c)
+        cubierto.append(fuente.intervalo)
+        por_dia.setdefault(dia, []).extend((r, fuente) for r in restos if r.duracion > 0)
+    motivos: set[str] = set()
+    piezas = []
+    for dia in sorted(por_dia):
+        piezas += _piezas_del_dia(dia, por_dia[dia], horarios, versiones, confirmaciones, motivos)
+    por_fecha = [
+        replace(p, intervalo=parte.intervalo, fecha_real=parte.fecha_real)
+        for p in piezas
+        for parte in dividir_por_fecha_real(p.intervalo, zona)
+    ]
+    return ResultadoEfectivo(
+        tuple(_fusionar(por_fecha)), bool(motivos), (AL12,) if motivos else (), tuple(sorted(motivos))
     )
