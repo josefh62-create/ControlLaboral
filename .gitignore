@@ -1,2 +1,20 @@
 # Local tooling cache (skill registry)
 .atl/
+
+# Datos y artefactos locales (nunca al repositorio)
+data/
+logs/
+backups/
+*.db
+*.db-wal
+*.db-shm
+
+# Python / pruebas
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Herramientas locales
+.claude/
+.codegraph/
+.superpowers/

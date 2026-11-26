@@ -1,0 +1,13 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}\\..\\PyPortable314\\python.exe",
+  "terminal.integrated.env.windows": {
+    "PATH": "${workspaceFolder}\\..\\PyPortable314;${env:PATH}"
+  },
+  "pyqt-integration.qtdesigner.path": "..\\..\\PyPortable314\\Lib\\site-packages\\PySide6\\designer.exe",
+  "pyqt-integration.pyuic.cmd": "..\\..\\PyPortable314\\Lib\\site-packages\\PySide6\\uic.exe",
+  "pyqt-integration.pyuic.compile.filepath": "${ui_name}.py",
+  "pyqt-integration.pyuic.compile.addOptions": "-g python",
+  "pyqt-integration.pyrcc.cmd": "..\\..\\..\\PyPortable314\\Lib\\site-packages\\PySide6\\rcc.exe",
+  "pyqt-integration.pyrcc.compile.filepath": "${workspace}\\${qrc_name}_rc.py",
+  "pyqt-integration.pyrcc.compile.addOptions": "-g python"
+}
