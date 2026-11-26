@@ -104,3 +104,23 @@ def test_dividir_en_extremos_o_fuera_da_un_solo_tramo():
 def test_intervalo_es_inmutable():
     with pytest.raises(AttributeError):
         Intervalo(0, 1).inicio = 5
+
+
+# --- Conversion instante <-> fecha local (soporte de calendario y horarios) ----------
+
+def test_conversion_epoch_y_fecha_local():
+    from datetime import date, datetime
+    from zoneinfo import ZoneInfo
+
+    from Dominio.tiempo import a_segundos_epoch, fecha_local, instante_local
+
+    cdmx = ZoneInfo("America/Mexico_City")
+    dt = datetime(2027, 1, 4, 23, 30, tzinfo=cdmx)
+    s = a_segundos_epoch(dt)
+    assert fecha_local(s, cdmx) == date(2027, 1, 4)
+    assert fecha_local(s + 31 * 60, cdmx) == date(2027, 1, 5)  # 00:01 del dia siguiente
+    assert instante_local(date(2027, 1, 4), 23 * 3600 + 1800, cdmx) == s
+    # segundos del dia mayores a 24 h caen en el dia siguiente (turno nocturno)
+    assert instante_local(date(2027, 1, 4), 25 * 3600, cdmx) == instante_local(date(2027, 1, 5), 3600, cdmx)
+    with pytest.raises(ValueError):
+        a_segundos_epoch(datetime(2027, 1, 4, 8, 0))  # sin zona

@@ -16,9 +16,14 @@ HH:mm reduce precision, y lo hace asi:
 """
 
 from dataclasses import dataclass
+from datetime import date, datetime, timedelta, timezone, tzinfo
 
 SEGUNDOS_POR_MINUTO = 60
 SEGUNDOS_POR_HORA = 3600
+
+
+_EPOCH = datetime(1970, 1, 1, tzinfo=timezone.utc)
+_UN_SEGUNDO = timedelta(seconds=1)
 
 
 def _entero(valor, nombre: str) -> int:
@@ -93,3 +98,28 @@ class Intervalo:
         if not self.inicio < instante < self.fin:
             return (self,)
         return (Intervalo(self.inicio, instante), Intervalo(instante, self.fin))
+
+
+# --- Instante (epoch UTC en segundos) <-> fecha local de una zona ---------------------
+# El dominio no tiene reloj: estas funciones solo convierten valores que entrega quien llama.
+
+def a_segundos_epoch(instante: datetime) -> int:
+    """Segundos enteros de epoch UTC de un datetime CON zona; trunca fracciones."""
+    if not isinstance(instante, datetime) or instante.utcoffset() is None:
+        raise ValueError("el instante debe ser un datetime con zona horaria")
+    return (instante - _EPOCH) // _UN_SEGUNDO
+
+
+def fecha_local(segundos: int, zona: tzinfo) -> date:
+    """Fecha calendario, en `zona`, del instante dado en segundos de epoch."""
+    return (_EPOCH + timedelta(seconds=_entero(segundos, "segundos"))).astimezone(zona).date()
+
+
+def instante_local(fecha: date, segundos_del_dia: int, zona: tzinfo) -> int:
+    """Epoch de la hora de pared `fecha` 00:00 + `segundos_del_dia` en `zona`.
+
+    Aritmetica de hora de pared: 25 h desde el lunes 00:00 es el martes 01:00. Sirve para
+    horarios (turnos nocturnos) y medianoches locales.
+    """
+    base = datetime(fecha.year, fecha.month, fecha.day, tzinfo=zona)
+    return a_segundos_epoch(base + timedelta(seconds=_entero(segundos_del_dia, "segundos_del_dia")))
