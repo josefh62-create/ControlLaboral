@@ -158,6 +158,9 @@ INTERVALO_MAX_S = "intervalo_max_s"
 # Politica patronal de calendario y tolerancias (T3). Tolerancias en segundos (minutos x60),
 # TO01: enteros de 0 a 15 minutos; sin valor sembrado: cada empresa debe configurarlas (TO02).
 SEMANA_INICIO_DIA = "semana_inicio_dia"  # 0 = lunes ... 6 = domingo (RE01)
+# Anticipacion de los avisos preventivos (plan 4.4, P-47): segundos antes del tope art. 66 semanal.
+# Sin valor sembrado: cada empresa la configura; sin ella no hay aviso preventivo (no es un limite legal).
+ANTICIPACION_PREVENTIVA_S = "anticipacion_preventiva_s"
 TOL_ENTRADA_ANTICIPADA_S = "tol_entrada_anticipada_s"
 TOL_ENTRADA_TARDIA_S = "tol_entrada_tardia_s"
 TOL_SALIDA_ANTICIPADA_S = "tol_salida_anticipada_s"

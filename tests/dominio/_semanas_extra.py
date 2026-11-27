@@ -30,6 +30,11 @@ LUN_2030 = date(2030, 1, 7)
 
 # Horario acordado 5 x 8 + 6 = 46 h (distribucion ilustrativa del plan 4.2 para 2027).
 PROGRAMA_46 = {0: [(8, 16)], 1: [(8, 16)], 2: [(8, 16)], 3: [(8, 16)], 4: [(8, 16)], 5: [(8, 14)]}
+# Otras distribuciones ilustrativas (plan 4.2): 48 h (2026), 44 h (2028), 42 h (2029) y 40 h (2030).
+PROGRAMA_48 = {d: [(8, 16)] for d in range(6)}
+PROGRAMA_44 = {**{d: [(8, 16)] for d in range(5)}, 5: [(8, 12)]}
+PROGRAMA_42 = {**{d: [(8, 16)] for d in range(5)}, 5: [(8, 10)]}
+PROGRAMA_40 = {d: [(8, 16)] for d in range(5)}
 
 
 def hm(x) -> int:
