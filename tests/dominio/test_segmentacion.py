@@ -137,13 +137,17 @@ def test_p27_mixta_con_3h29_nocturnas_es_mixta():
     jornada = res.jornadas[0]
     assert (jornada.nocturnos_s, jornada.diurnos_s) == (3 * H + 29 * M, 3 * H)
     assert jornada.clasificacion == "mixta"
+    assert AL14 not in res.alertas
 
 
 def test_p27_con_3h30_nocturnas_la_jornada_mixta_se_reputa_nocturna():
-    h = horario({0: DiaHorario((Intervalo(hs(17), hs(23, 30)),))}, regimen="mixta")
+    # Art. 60: con 3 h 30 nocturnas se reputa nocturna; el horario lo declara asi (Q-B), sin AL14.
+    h = horario({0: DiaHorario((Intervalo(hs(17), hs(23, 30)),))}, regimen="nocturna")
     res = correr([par(t(LUNES, 17), t(LUNES, 23, 30))], [h])
     assert res.jornadas[0].nocturnos_s == 3 * H + 30 * M
     assert res.jornadas[0].clasificacion == "nocturna"
+    assert res.jornadas[0].tipo_efectivo == "nocturna"
+    assert AL14 not in res.alertas
 
 
 def test_jornada_totalmente_diurna_se_clasifica_diurna():
