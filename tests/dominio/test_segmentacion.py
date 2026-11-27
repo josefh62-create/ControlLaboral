@@ -19,12 +19,14 @@ from Dominio.horarios import (
     FUERA_HORARIO,
     PENDIENTE,
     SIN_HORARIO,
+    AL14,
     DescansoHorario,
     DiaHorario,
     Horario,
     PiezaEfectiva,
     ResultadoEfectivo,
     construir_intervalos_efectivos,
+    verificar_regimen_declarado,
 )
 from Dominio.modelos import VersionParametro, Vigencia
 from Dominio.normatividad import SEMILLA_LEGAL, SEMILLA_PATRONAL
@@ -305,6 +307,63 @@ def test_sin_umbral_nocturno_la_jornada_mixta_queda_sin_clasificar():
     res = correr([par(t(LUNES, 17), t(LUNES, 23))], [h], versiones)
     assert res.jornadas[0].clasificacion is None
     assert res.provisional and f"falta:{n.UMBRAL_NOCTURNA_S}" in res.motivos
+
+
+# --- Q-B / Q-C (27/11/2026): el tipo de jornada lo declara el horario; AL14 avisa de incongruencias ----
+
+def _horario_14_22(regimen):
+    return horario({0: DiaHorario((Intervalo(hs(14), hs(22)),))}, regimen=regimen)
+
+
+def test_qb_el_exceso_nunca_cambia_el_tipo_declarado_mixta_sigue_mixta_aunque_salga_a_las_2330():
+    res = correr([par(t(LUNES, 14), t(LUNES, 23, 30))], [_horario_14_22("mixta")])
+    jornada = res.jornadas[0]
+    assert jornada.tipo_efectivo == "mixta"
+    assert AL14 not in res.alertas and AL14 not in jornada.alertas
+    assert total(res, clase=CLASE_EXCESO, banda=BANDA_NOCTURNA) > 0  # el exceso nocturno existe y no cambia el tipo
+
+
+def test_qc_horario_14_22_declarado_diurna_dispara_al14_sin_provisional():
+    res = correr([par(t(LUNES, 14), t(LUNES, 22))], [_horario_14_22("diurna")])
+    assert AL14 in res.alertas and AL14 in res.jornadas[0].alertas
+    assert res.provisional is False and AL12 not in res.alertas
+    assert res.jornadas[0].tipo_efectivo == "diurna"  # el tipo declarado rige
+
+
+def test_qc_horario_22_06_declarado_nocturna_no_dispara_al14():
+    res = correr([par(t(LUNES, 22), t(MARTES, 5))], [horario_nocturno()])
+    assert AL14 not in res.alertas and res.jornadas[0].tipo_efectivo == "nocturna"
+
+
+def test_qb_sin_regimen_declarado_el_tipo_es_desconocido_provisional_con_al12():
+    h = _horario_14_22("mixta")
+    object.__setattr__(h, "regimen", None)  # un horario sin tipo declarado (dato faltante, no se inventa)
+    res = correr([par(t(LUNES, 14), t(LUNES, 22))], [h])
+    assert res.jornadas[0].tipo_efectivo is None
+    assert res.provisional and AL12 in res.alertas and "falta:regimen_declarado" in res.motivos
+    assert AL14 not in res.alertas
+
+
+def test_qc_sin_franja_nocturna_es_al12_y_no_al14():
+    versiones = tuple(v for v in BASE if v.clave != n.NOCTURNO_INICIO_S) + tuple(tol(10))
+    res = correr([par(t(LUNES, 14), t(LUNES, 22))], [_horario_14_22("diurna")], versiones)
+    assert res.provisional and AL12 in res.alertas and AL14 not in res.alertas
+
+
+def test_qc_regimen_que_no_es_diurna_nocturna_mixta_no_se_compara():
+    h = horario({0: DiaHorario((Intervalo(hs(17), hs(23, 30)),))}, regimen="parcial")  # seria nocturna por art. 60
+    res = correr([par(t(LUNES, 17), t(LUNES, 23, 30))], [h])
+    assert AL14 not in res.alertas
+    assert res.jornadas[0].tipo_efectivo == "parcial"
+
+
+def test_qc_verificar_regimen_declarado_es_funcion_pura_reutilizable_al_guardar_el_horario():
+    assert verificar_regimen_declarado(_horario_14_22("diurna"), BASE, LUNES).alerta == AL14
+    assert verificar_regimen_declarado(_horario_14_22("mixta"), BASE, LUNES).alerta is None
+    assert verificar_regimen_declarado(_horario_14_22("mixta"), BASE, MARTES).alerta is None  # dia no programado
+    sin_franja = tuple(v for v in BASE if v.clave != n.NOCTURNO_INICIO_S)
+    r = verificar_regimen_declarado(_horario_14_22("diurna"), sin_franja, LUNES)
+    assert r.alerta is None and r.motivo == f"falta:{n.NOCTURNO_INICIO_S}"
 
 
 # --- Propiedades con semillas fijas -------------------------------------------------------------

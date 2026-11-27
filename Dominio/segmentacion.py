@@ -35,6 +35,7 @@ from Dominio.calendario import (
 )
 from Dominio.horarios import (
     _ERRORES_DE_CONFIGURACION,
+    AL14,
     CONFIRMADO,
     DENTRO_HORARIO,
     DIA_NO_PROGRAMADO,
@@ -44,6 +45,7 @@ from Dominio.horarios import (
     SIN_HORARIO,
     _motivo_de,
     resolver_horario,
+    verificar_regimen_declarado,
 )
 from Dominio.modelos import ORIGEN_PATRONAL, Vigencia
 from Dominio.normatividad import resolver_vigente
@@ -89,13 +91,23 @@ class Segmento:
 
 @dataclass(frozen=True)
 class JornadaClasificada:
-    """Clasificacion de la jornada de un dia logico con el tiempo confirmado dentro de horario."""
+    """Jornada de un dia logico.
+
+    `tipo_efectivo` (= regimen declarado por el horario) es el tipo que rige para el tope art. 61
+    (T5): el exceso o lo trabajado jamas lo cambian (decision 27/11/2026). `clasificacion`,
+    `nocturnos_s` y `diurnos_s` son informativos: art. 60 sobre el tiempo confirmado dentro de horario.
+    """
 
     dia_logico: date
     nocturnos_s: int
     diurnos_s: int
     clasificacion: str | None  # diurna | nocturna | mixta; None si falta un dato (provisional)
     regimen_declarado: str | None = None
+    alertas: tuple[str, ...] = ()  # AL14 si el tipo declarado no coincide con el art. 60 programado
+
+    @property
+    def tipo_efectivo(self) -> str | None:
+        return self.regimen_declarado  # None: horario sin tipo declarado (provisional + AL12)
 
 
 @dataclass(frozen=True)
@@ -225,7 +237,17 @@ def _clasificar_jornadas(segmentos, ctx: _Contexto, motivos: set[str]) -> tuple[
             except _ERRORES_DE_CONFIGURACION as error:
                 motivos.add(_motivo_de(error))
         horario = ctx.horario(dia)
-        jornadas.append(JornadaClasificada(dia, noct, diurno, clasificacion, horario.regimen if horario else None))
+        declarado = horario.regimen if horario else None
+        alertas = ()
+        if declarado is None:
+            motivos.add("falta:regimen_declarado")  # sin tipo declarado no se infiere del tiempo trabajado
+        else:
+            verificacion = verificar_regimen_declarado(horario, ctx.versiones, dia)
+            if verificacion.motivo:
+                motivos.add(verificacion.motivo)
+            if verificacion.alerta:
+                alertas = (AL14,)
+        jornadas.append(JornadaClasificada(dia, noct, diurno, clasificacion, declarado, alertas))
     return tuple(jornadas)
 
 
@@ -247,6 +269,8 @@ def segmentar(
         tuple(segmentos),
         jornadas,
         efectivo.provisional or bool(motivos),
-        tuple(sorted(set(efectivo.alertas) | ({AL12} if motivos else set()))),
+        tuple(sorted(
+            set(efectivo.alertas) | ({AL12} if motivos else set()) | {a for j in jornadas for a in j.alertas}
+        )),
         tuple(sorted(todos)),
     )
