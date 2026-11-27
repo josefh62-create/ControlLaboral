@@ -75,5 +75,16 @@ Rutas: todas delegadas (disparador: 2+ archivos no triviales + lectura de prepar
 
 - 2026-11-27: T5 `fffa48c` (fixture P-27 declarado nocturna), `fa0d490` (`criterios_extra`: Protocol + registro, `semanal_con_acuerdo`, extra a excesos más recientes, remanente a últimos minutos programados + HO03), `1d4793a` (`tramos_extra`: doble hasta tope art. 66, triple el resto, `exceso_legal` art. 68 y 12 h/día, fuera de distribución 4 h/4 días → `extra_pendiente_clasificacion`, autorización solo etiqueta, AL02–AL07; tope art. 61 de `tipo_efectivo` solo informativo). Delegado, TDD (RED de colección + mutaciones: 50 mutantes, sobrevivientes equivalentes o fijados con pruebas). Propiedades 400+400+150+150 semillas. `pytest -q -W error`: 453 passed, 2 skipped (repetido por el orquestador). 1 633 líneas (~2/3 pruebas). Riesgo: medio → autoverificación + revisión puntual. Divergencias con la matriz cap. 9: P-06 (40 h contrato) y P-07 dan 0 extra con el criterio semanal. Preguntas al propietario: (Q-D) tope semanal = mín(legal, horas del horario) según plan §4.2 l.117 → P-06 = 2 extra; (Q-E) categoría neutra de pendiente para lo no-extra; (Q-F) semana de transición acotada (tope menor, diferencia ≤2 h pendiente + AL12); (Q-G) minutos fuera de distribución art. 66 → pendiente (validar con asesor); (Q-H) alerta por exceso del tope diario art. 61; (Q-I) sembrar 60 min de anticipación preventiva (AL03).
 
+- 2026-11-27: decisiones del propietario sobre T5 (pendientes de aplicar en una corrección acotada):
+  - **Q-D:** la extra semanal empieza después del **tope legal vigente** (46 h en 2027) aunque el horario sea menor (contrato 40 h trabajando 42 → 0 extra). Temporal hasta reglas STPS. El código ya lo hace. Corregir plan §4.2 línea 117 («depende de su horario vigente acordado») y matriz cap. 9: P06 → 42 normales, 0 extra; P07 → 0 extra (compensación semanal).
+  - **Q-E:** separar dos categorías: `extra_pendiente_clasificacion` solo para minutos fuera de distribución art. 66; nueva categoría neutra «tiempo pendiente de clasificar» para semana sin tope resuelto y franja dudosa de la semana de transición.
+  - **Q-F:** semana de transición acotada como está (tope menor 46 → extra posible; sobre 48 → extra segura; franja ≤2 h → tiempo pendiente + provisional + AL12); en T7 queda como parámetro de política.
+  - **Q-G:** minutos fuera de distribución art. 66 (>4 h/día, 5.º día) quedan **pendientes hasta que lo determine el asesor laboral** (sin consumir tope doble). El código ya lo hace; se discutió que la lectura literal del art. 68 apuntaría a triple.
+  - **Q-H:** agregar **aviso informativo** (no código AL) en días que exceden el tope diario art. 61 (`tipo_efectivo`) y se compensan en la semana; no cambia el cálculo.
+  - **Q-I:** PENDIENTE — ¿sembrar 60 min como anticipación preventiva general para AL03 (configurable por empresa)? Recomendación: sí.
+
 ## Siguiente paso
-Resolver Q-D…Q-I con el propietario (una a la vez), corrección acotada de T5; push y PR E1-5; luego T6.
+1. Obtener respuesta del propietario a Q-I.
+2. Corrección acotada de T5 (delegada, TDD) en `feat/e1-extra`: Q-E (categoría neutra), Q-H (aviso art. 61), Q-I según respuesta; docs plan §4.2 l.117 y matriz P06/P07 (Q-D).
+3. Push y PR E1-5 (base `feat/e1-segmentacion`, PR #10).
+4. T6 — alertas, alimentos e invariantes.
