@@ -137,6 +137,8 @@ MENOR_HORA_LIMITE_S = "menor_hora_limite_s"
 EDAD_MINIMA_TRABAJO = "edad_minima_trabajo"
 EDAD_FIN_REGIMEN_15_16 = "edad_fin_regimen_15_16"
 EDAD_MAYORIA = "edad_mayoria"
+# Art. 69 LFT: maximo de dias de trabajo seguidos por cada dia de descanso (cantidad de dias).
+DESCANSO_DIAS_TRABAJO_MAX = "descanso_dias_trabajo_max"
 # Art. 74 LFT (descansos obligatorios). Fechas fijas: valor = mes*100 + dia; lunes de un mes:
 # valor = mes*100 + ordinal del lunes. La fraccion VII (1 de octubre) solo se aplica cada
 # ART74_PERIODO_TRANSMISION_ANIOS anos a partir del anio base de la transmision del Ejecutivo.
@@ -247,6 +249,8 @@ SEMILLA_LEGAL: tuple[VersionParametro, ...] = (
     _v(EDAD_MINIMA_TRABAJO, 15, _D2026, None, "LFT arts. 22 y 22 Bis"),
     _v(EDAD_FIN_REGIMEN_15_16, 16, _D2026, None, "LFT arts. 22 y 177"),
     _v(EDAD_MAYORIA, 18, _D2026, None, "LFT arts. 173 a 180 (menores de dieciocho anos)"),
+    # Art. 69: por cada seis dias de trabajo, por lo menos un dia de descanso (doc. 00; AL08, P-28).
+    _v(DESCANSO_DIAS_TRABAJO_MAX, 6, _D2026, None, "LFT art. 69"),
     # Art. 74 LFT: descansos obligatorios (fraccion VII reformada DOF 30-09-2024). La ultima
     # transmision del Ejecutivo Federal fue el 1 de octubre de 2024; se repite cada seis anos
     # (supuesto sobre el ancla: validar con el asesor laboral).
