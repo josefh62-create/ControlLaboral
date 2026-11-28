@@ -26,9 +26,9 @@ Hoy el repositorio solo tiene documentación. Antes de programar el motor (E1) y
 ## Tareas
 - [x] T1 — Andamiaje: árbol de carpetas de E0, `.gitignore`, `run.bat`, `compilar_ui.bat`, `.vscode/settings.json`, `requirements.txt`, `pytest.ini`, `Config/config.py` (rutas dev/prod, versión de esquema), `README.md`.
 - [x] T2 — Base de datos: `Database/conexion_sqlite.py` (PRAGMAs: `foreign_keys=ON`, WAL, `synchronous=FULL`, `busy_timeout`), `Database/unidad_trabajo.py`, `Database/crear_bd.py` con `_aplicar_migraciones` y `Database/migraciones/0001_esquema_base.sql` (tabla de versión de esquema). Pruebas: migración repetible e idempotente, PRAGMAs activos, rollback de la unidad de trabajo.
-- [ ] T3 — Bases MVC: `Modelos/modelo_base.py` (`ModeloBase`) y `Controladores/controlador_base.py` (`ControladorBase`) adaptados del patrón de ControlDeAlmacen/Mi_Tiendita. Pruebas mínimas de `ModeloBase` con BD temporal.
+- [x] T3 — Bases MVC: `Modelos/modelo_base.py` (`ModeloBase`) y `Controladores/controlador_base.py` (`ControladorBase`) adaptados del patrón de ControlDeAlmacen/Mi_Tiendita. Pruebas mínimas de `ModeloBase` con BD temporal.
 - [ ] T4 — Ventana principal y tema: `Recursos/Estilos/` (base/light/dark), `ClasesComunes/temas.py`, `Vistas/frm_principal.ui` con sidebar (contenedores `QFrame`), `vista_principal.py`, `controlador_principal.py` con `modulos_disponibles` vacío, `Recursos/Imagenes/controllaboral.qrc`, `main.py`. `.ui` compilado con `compilar_ui.bat`; la app arranca en claro y oscuro.
-- [ ] T5 — Arquitectura: paquete `Dominio/` (con `__init__.py`), `tests/arquitectura/test_pureza_dominio.py` (AST: `Dominio/` sin PySide6/sqlite3/`datetime.now`) y prueba de dirección de dependencias entre capas.
+- [x] T5 — Arquitectura: paquete `Dominio/` (con `__init__.py`), `tests/arquitectura/test_pureza_dominio.py` (AST: `Dominio/` sin PySide6/sqlite3/`datetime.now`) y prueba de dirección de dependencias entre capas.
 
 ## Criterios de aceptación (doc 03 §13, E0)
 - `run.bat` arranca la ventana principal con `PyPortable314`; cambia entre tema claro y oscuro.
@@ -55,5 +55,7 @@ Hoy el repositorio solo tiene documentación. Antes de programar el motor (E1) y
 
 - 2026-11-26: verificador independiente: PASS sin bloqueos; 4 correcciones aplicadas en `4f70428` (carrera entre procesos, checksum verificado, rollback sin enmascarar errores, ruta de datos absoluta) + pruebas reforzadas. `pytest -W error`: 15 passed (repetido por el orquestador). PR E0-1 abierto.
 
+- 2026-11-26: T3 `3d22898` y T5 `2fb0db3` (delegados) + corrección del orquestador `1011272` (Dominio podía no importarse a sí mismo). `pytest -W error`: 42 passed, 2 skipped (Servicios/Repositorios aún no existen). ControlDeAlmacen y Mi_Tiendita sin cambios. Riesgo: medio (468 líneas) → autoverificación + comprobación del orquestador, sin verificador aparte. PR E0-2 abierto.
+
 ## Siguiente paso
-E0-2 (T3 + T5) en `feat/e0-bases-mvc`, apilada sobre E0-1.
+E0-3 (T4: ventana principal, sidebar y tema) en `feat/e0-ventana`, apilada sobre E0-2.
