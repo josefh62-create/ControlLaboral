@@ -425,6 +425,7 @@ Agregar pruebas de regresión específicas según hallazgos A01–A10. Probar vo
 - [ ] Cargar vigencias legales y asignaciones históricas sin alterar originales.
 - [ ] Configurar horarios 2027 y detectar incompatibilidades antes de activación.
 - [ ] Validar tolerancias, alertas y permisos.
+- [ ] Exportar/importar la configuración laboral entre empresas (decisión del propietario, 28/11/2026): **copia independiente**, no herencia de una configuración de grupo. Se exportan solo los parámetros patronales por empresa (horarios, tolerancias, semana laboral, criterio de extra, máximos de intervalo, reglas de alimentos, etc.) con sus vigencias; nunca datos de identidad de la empresa (nombre, RFC, registro patronal), usuarios, autorizadores, empleados, relojes ni checadas. Los parámetros legales son globales y no viajan en el archivo. Tras importar, la empresa destino ajusta lo que le concierne sin afectar a la de origen. El esquema de parámetros debe separar desde su diseño los datos de empresa de los parámetros laborales; el archivo lleva versión de esquema y la importación muestra vista previa, valida y queda auditada.
 
 ### Fase 3 — Motor y presentación
 - [ ] Eliminar dependencia de constantes laborales en cálculos, filtros y textos.
