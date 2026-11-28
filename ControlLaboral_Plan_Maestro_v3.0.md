@@ -180,6 +180,7 @@ Configurar anticipación preventiva (minutos o porcentaje), límite interno opci
 | AL12 | Horario/norma ausente o transición no resuelta | Cálculo pendiente |
 | AL13 | Prohibición para menores de 18 (domingo o descanso obligatorio, después de las 22:00, tiempo extraordinario; arts. 175–178 LFT). Decisión del propietario 26/11/2026 | Crítico |
 | AL14 | Tipo de jornada declarado en el horario no coincide con la clasificación del art. 60 según sus horas programadas; el tipo declarado rige (art. 61) y el exceso nunca lo cambia. Decisión del propietario 27/11/2026 | Configuración |
+| AL15 | Horario vigente incompatible con el tope legal (antes HO03): el horario acordado de la semana rebasa el tope vigente y el remanente de extra se asigna a los últimos minutos programados (§5.2). Distinta de AL09, que es preventiva (horario futuro). No bloquea el cierre (Q-J). Decisión del propietario 28/11/2026 | Configuración |
 
 En 2027, con anticipación de 60 min: avisar a las 8 h extraordinarias, marcar límite alcanzado a 9 h, señalar excedente del umbral al rebasar 9 h; a 13 h se alcanza el límite combinado y al superarlo se genera alerta crítica. No esperar a 13 h si ya existe infracción de distribución diaria. La clasificación jurídica de extras que violan límites de distribución sin exceder el umbral semanal deberá validarse; no asumir que siempre son dobles.
 
