@@ -31,12 +31,13 @@ from Dominio.checadas import clave_orden
 from Dominio.emparejamiento import TRASLADO, tiempo_sin_traslape
 from Dominio.modelos import Vigencia
 from Dominio.normatividad import FaltaParametro, ParametroAmbiguo, resolver_vigente
-from Dominio.regimenes import REGIMENES, Regimen, obtener_regimen, tope_diario_s
+from Dominio.regimenes import REGIMENES, Regimen, clasificar_jornada, obtener_regimen, tope_diario_s
 from Dominio.tiempo import Intervalo, instante_local
 from Dominio.tolerancias import Tolerancias, ToleranciaInvalida, resolver_tolerancias
 
 HO03 = "HO03"  # alerta «horario incompatible con el tope legal» (plan 5.2)
 AL09 = "AL09"  # horario futuro incompatible con la reforma (HO07)
+AL14 = "AL14"  # tipo de jornada declarado no coincide con el art. 60 (Configuracion; no bloquea)
 
 MAX_SEGUNDOS_DIA_HORARIO = 2 * 86_400
 
@@ -271,6 +272,73 @@ def _motivo_de(error: Exception) -> str:
     if isinstance(error, ParametroAmbiguo):
         return f"parametro_ambiguo:{error.clave}"
     return f"falta:{error.clave}"
+
+# ---------------------------------------------------------------------------
+# AL14: el tipo declarado del horario vs. el art. 60 sobre sus horas PROGRAMADAS
+# ---------------------------------------------------------------------------
+
+_TIPOS_ART_60 = ("diurna", "nocturna", "mixta")
+_DIA_S = 86_400
+
+
+@dataclass(frozen=True)
+class VerificacionRegimen:
+    alerta: str | None = None  # AL14 si el tipo declarado no coincide con el art. 60
+    motivo: str | None = None  # dato faltante/invalido: no se compara (el llamador marca AL12)
+
+
+def _segundos_nocturnos(piezas, inicio: int, fin: int) -> int:
+    """Segundos de `piezas` (hora de pared, 0..48 h desde la medianoche) dentro de la franja nocturna."""
+    tramos = []
+    for k in (0, 1):
+        base = k * _DIA_S
+        pares = [(0, fin), (inicio, _DIA_S)] if inicio > fin else [(inicio, fin)]
+        tramos.extend((base + a, base + b) for a, b in pares if a < b)
+    return sum(max(0, min(p.fin, b) - max(p.inicio, a)) for p in piezas for a, b in tramos)
+
+
+def verificar_regimen_declarado(horario: Horario, versiones, fecha: date) -> VerificacionRegimen:
+    """AL14 (decision 27/11/2026): clasifica con el art. 60 las horas PROGRAMADAS del horario en `fecha`.
+
+    Nunca mira lo trabajado: el tipo declarado rige (art. 61) y el exceso jamas lo cambia. Reglas:
+    - se compara solo si el regimen declarado es diurna, nocturna o mixta; los demas (parcial,
+      menores) no tienen clasificacion art. 60 propia y no generan AL14;
+    - el dia de `fecha` debe estar programado; si no, no hay nada que comparar;
+    - las horas son las de los intervalos menos los descansos NO computables (como en la jornada
+      efectiva), con la franja nocturna y el umbral de 3 h 30 vigentes en `fecha` (`resolver_vigente`);
+    - franja o umbral faltante, ambiguo o invalido => `motivo` (AL12 en el llamador), nunca AL14.
+    Pura: sin E/S ni reloj; reutilizable al guardar un horario.
+    """
+    dia = horario.dias.get(fecha.weekday())
+    if horario.regimen not in _TIPOS_ART_60 or dia is None:
+        return VerificacionRegimen()
+    try:
+        inicio = resolver_vigente(versiones, n.NOCTURNO_INICIO_S, fecha).valor
+        fin = resolver_vigente(versiones, n.NOCTURNO_FIN_S, fecha).valor
+        if not all(0 <= v <= _DIA_S for v in (inicio, fin)) or inicio == fin:
+            return VerificacionRegimen(motivo="franja_nocturna_invalida")
+        piezas = [i for i in dia.intervalos]
+        for d in dia.descansos:
+            if not d.computable:
+                piezas = [q for p in piezas for q in _partir(p, d.intervalo)]
+        nocturnos = _segundos_nocturnos(piezas, inicio, fin)
+        diurnos = sum(p.duracion for p in piezas) - nocturnos
+        if nocturnos == 0 and diurnos == 0:
+            return VerificacionRegimen()
+        calculado = clasificar_jornada(nocturnos, diurnos, versiones, fecha)
+    except _ERRORES_DE_CONFIGURACION as error:
+        return VerificacionRegimen(motivo=_motivo_de(error))
+    return VerificacionRegimen(alerta=AL14 if calculado != horario.regimen else None)
+
+
+def _partir(pieza: Intervalo, quitar: Intervalo) -> list[Intervalo]:
+    """`pieza` sin el tramo `quitar` (0, 1 o 2 pedazos)."""
+    if quitar.fin <= pieza.inicio or quitar.inicio >= pieza.fin:
+        return [pieza]
+    antes = Intervalo(pieza.inicio, quitar.inicio) if quitar.inicio > pieza.inicio else None
+    despues = Intervalo(quitar.fin, pieza.fin) if quitar.fin < pieza.fin else None
+    return [x for x in (antes, despues) if x]
+
 
 
 def resolver_contexto(fecha: date, horarios, calendarios, versiones, empresa: str | None = None) -> ContextoDia:
