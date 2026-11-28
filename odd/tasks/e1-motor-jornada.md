@@ -89,4 +89,4 @@ Rutas: todas delegadas (disparador: 2+ archivos no triviales + lectura de prepar
 ## Siguiente paso
 1. Push de `feat/e1-alertas` y PR E1-6 (base `feat/e1-extra`, PR #11).
 2. T7 — composición: `motor_jornada.py` (`calcular_semana`), huella SHA-256, semana de transición, propiedades, vigilantes; cablear AL01/AL08/AL11, alimentos e invariantes (`verificar_equivalencia` sobre permutaciones).
-3. Resolver Q-J a Q-N con el propietario.
+3. Resolver Q-K a Q-N con el propietario. **Q-J resuelta (28/11/2026): solo AL12 bloquea el cierre de semana**; AL08, AL13 y AL07 superado quedan visibles y registradas sin bloquear (el código ya lo hace; sin cambio).
