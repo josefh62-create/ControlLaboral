@@ -117,7 +117,7 @@ ControlLaboral/                         (raíz del repositorio; V2, independient
 │   ├── criterios_extra.py              criterio «semanal con acuerdo» (estrategia registrable por código)
 │   ├── tramos_extra.py                 doble/triple, límites art. 66/68, exceso legal, pendiente
 │   ├── tolerancias.py                  diferencia real vs administrativa (TO01–TO07)
-│   ├── alertas.py                      AL01–AL12 como funciones puras + clave de deduplicación
+│   ├── alertas.py                      AL01–AL13 como funciones puras + clave de deduplicación
 │   ├── alimentos.py                    derecho a alimentos por T.E. según reglas configuradas
 │   ├── invariantes.py                  invariantes de plan §5.4
 │   └── motor_jornada.py                `calcular_semana(EntradaSemana) -> ResultadoSemana` (composición)
@@ -224,7 +224,7 @@ Cada fila crea (cuando aplica) `Vistas/frm_<m>.ui`, `frm_<m>.py` (generado), `Vi
 | `actas` | `modelo_actas`, `frm_actas` | Un folio lógico por empleado-patrón-semana; versiones, PDF emitido congelado, firmas, ejemplar firmado digitalizado, estados | caps. 16, 18 | D09 |
 | `consulta_historica` | `modelo_consulta_historica`, `frm_consulta_historica` | Consulta y reportes de incidencias/actas con filtros combinables; fecha laboral vs fecha de operación; fotografía al cierre | cap. 18 | D10 |
 | `reportes` | `modelo_reportes`, `frm_reportes` | Reporte semanal de T.E. (xlsx/pdf), concentrado de incidencias, revisión diaria/semanal, colores con leyenda; reimpresión exacta | §7.4, §18.3 | R023–R026; D10 |
-| `alertas` | `modelo_alertas`, `frm_alertas` | Bandeja AL01–AL12 con deduplicación por trabajador+periodo+regla+versión, reconocimiento sin borrado | §4.4 | D03, D21 |
+| `alertas` | `modelo_alertas`, `frm_alertas` | Bandeja AL01–AL13 con deduplicación por trabajador+periodo+regla+versión, reconocimiento sin borrado | §4.4 | D03, D21 |
 | `usuarios` | `modelo_usuarios`, `frm_usuarios`, `frm_inicio_sesion`, `frm_bitacora` | Cuentas, roles por empresa y vigencia, permisos, inicio de sesión, consulta de bitácora | §6, §22.1, cap. 28 | R022; D13 |
 | `respaldo` | `modelo_respaldo`, `frm_respaldo` | Herramientas → Respaldar/Restaurar, destino elegido, respaldo automático, alerta de respaldo antiguo | §22.3, Q15 | D14 |
 | `configuracion` | `modelo_configuracion`, `frm_configuracion` | Tema claro/oscuro/sistema, ubicación de datos, preferencias locales (fuera de Git) | doc. maestro §7 | R027, R032; D18 |
@@ -283,7 +283,7 @@ Servicios transversales sin pantalla propia: `servicio_calculo_semana`, `servici
 | 9 | §5.2-1 | `extra_semanal` (`criterios_extra`) | `max(0, confirmado − tope_semanal_vigente)` (criterio «semanal con acuerdo») |
 | 10 | §5.2-2 | `asignar_extra` (`criterios_extra`) | asigna la extra a los **excesos diarios más recientes** (consumo en orden cronológico inverso, división exacta de segmentos); si sobra, al final de los minutos programados + alerta HO03; nunca se pierde tiempo |
 | 11 | §5.3 | `repartir_tramos` (`tramos_extra`) | cronológico: doble hasta el tope art. 66, resto triple; evalúa por separado 4 h/día, 4 días/semana y 12 h/día; exceso legal como etiqueta; minutos fuera de la distribución art. 66 → `extra_pendiente_clasificacion` (*propuesta*: el plan §5.3 pide «revisión jurídica» pero no fija la categoría; validar con asesor) |
-| 12 | §4.3, §4.4 | `evaluar_tolerancias`, `evaluar_alertas` | diferencia real y administrativa por separado (TO05); AL01–AL12 con clave de deduplicación |
+| 12 | §4.3, §4.4 | `evaluar_tolerancias`, `evaluar_alertas` | diferencia real y administrativa por separado (TO05); AL01–AL13 con clave de deduplicación |
 | 13 | §4.5, §17.1 | `derivar_alimentos` (`alimentos`) | solo con T.E. y regla configurada |
 | 14 | §5.4 | `verificar_invariantes` (`invariantes`) | presencia = efectivo + descansos/no laborado + pendiente; efectivo = ordinario + extra + especial; sin totales negativos ni minutos duplicados; falla ⇒ error de programación visible, no resultado silencioso |
 
