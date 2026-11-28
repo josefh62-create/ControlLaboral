@@ -81,10 +81,10 @@ Rutas: todas delegadas (disparador: 2+ archivos no triviales + lectura de prepar
   - **Q-F:** semana de transición acotada como está (tope menor 46 → extra posible; sobre 48 → extra segura; franja ≤2 h → tiempo pendiente + provisional + AL12); en T7 queda como parámetro de política.
   - **Q-G:** minutos fuera de distribución art. 66 (>4 h/día, 5.º día) quedan **pendientes hasta que lo determine el asesor laboral** (sin consumir tope doble). El código ya lo hace; se discutió que la lectura literal del art. 68 apuntaría a triple.
   - **Q-H:** agregar **aviso informativo** (no código AL) en días que exceden el tope diario art. 61 (`tipo_efectivo`) y se compensan en la semana; no cambia el cálculo.
-  - **Q-I:** PENDIENTE — ¿sembrar 60 min como anticipación preventiva general para AL03 (configurable por empresa)? Recomendación: sí.
+  - **Q-I:** aprobada el 28/11/2026 (ver entrada siguiente).
+- 2026-11-28: **Q-I aprobada** por el propietario: 60 min como anticipación preventiva general (AL03), configurable por empresa. Corrección acotada de T5 (delegada, TDD, RED observado → GREEN) en 4 commits: `4858d14` (Q-I: semilla patronal `anticipacion_preventiva_s` = 60 min en `SEMILLA_PATRONAL`, precedencia empresa > general; RED: `FaltaParametro` al resolver la semilla), `e5327cc` (Q-D, solo documentación: plan §4.2 y matriz cap. 9, P06 → 42 normales/0 extras, P07 → 0 extras; temporal hasta reglas STPS), `a6b1682` (Q-E/Q-F: nueva categoría neutra `tiempo_pendiente_de_clasificar` para semana sin tope resuelto, franja dudosa de la transición y tope/distribución art. 66 faltante; `extra_pendiente_clasificacion` queda solo para lo fuera de distribución art. 66; RED: 5 fallos por categoría vacía y campo `por_clasificar_s` inexistente), `19ad9bf` (Q-H: `avisos_informativos` con `tope_art61_diario_compensado_en_semana`, sin código AL ni cambio de minutos; RED de colección por símbolo inexistente). `pytest -q -W error`: 464 passed, 2 skipped. Diff contra `51dce73`: +139/−27 líneas (Dominio +36/−9, pruebas +100/−15, plan +3/−3). Q-G sin cambios. Decisión del writer a confirmar: tope/distribución art. 66 faltante → categoría neutra (no se sabe si es fuera de distribución).
 
 ## Siguiente paso
-1. Obtener respuesta del propietario a Q-I.
-2. Corrección acotada de T5 (delegada, TDD) en `feat/e1-extra`: Q-E (categoría neutra), Q-H (aviso art. 61), Q-I según respuesta; docs plan §4.2 l.117 y matriz P06/P07 (Q-D).
-3. Push y PR E1-5 (base `feat/e1-segmentacion`, PR #10).
-4. T6 — alertas, alimentos e invariantes.
+1. Push de `feat/e1-extra` y PR E1-5 (base `feat/e1-segmentacion`, PR #10).
+2. T6 — alertas, alimentos e invariantes (`alertas.py` AL01–AL14 + clave de deduplicación, `alimentos.py`, `invariantes.py`).
+3. En T6/T7: la categoría neutra y el aviso informativo art. 61 deben proyectarse en invariantes (plan §5.4) y resultado; la semana de transición pasa a parámetro de política en T7.
