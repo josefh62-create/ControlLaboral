@@ -114,7 +114,7 @@ Catálogo versionado de reglas legales. Campos sugeridos (adaptar a tablas exist
 
 ### 4.2 Horarios y asignaciones (HO)
 
-El límite ordinario de cada trabajador depende de su horario vigente acordado, no del máximo legal general. Reutilizar el catálogo existente si cumple.
+El horario vigente acordado define los minutos ordinarios programados de cada trabajador (HO02), pero la **extra semanal empieza después del tope legal semanal vigente** (46 h en 2027), aunque el horario acordado sea menor (decisión del propietario, 28/11/2026). Un contrato de 40 h que trabaja 42 h no genera extra; la diferencia es tiempo ordinario. Criterio temporal hasta que la STPS emita reglas; el criterio es reemplazable (§5.2). Reutilizar el catálogo existente si cumple.
 
 Campos: horario, trabajador/grupo asignado, centro, zona horaria, días, intervalos ordinarios, descansos, carácter computable de cada descanso, tipo de jornada, inicio/fin de vigencia, régimen, referencia del acuerdo.
 
@@ -364,8 +364,8 @@ Salvo indicación, jornada diurna regular, sin festivo, tiempo efectivo confirma
 | P03 | 2028, horario 44 h, trabajo 48 h con 4 extras en distribución válida | 44 normales, 4 dobles |
 | P04 | 2029, horario 42 h, 6 extras en distribución válida | 42 normales, 6 dobles |
 | P05 | 2030, horario 40 h, 8 extras en distribución válida | 40 normales, 8 dobles |
-| P06 | Contrato 40 h en 2027, 2 h fuera de horario | 40 normales, 2 extras |
-| P07 | Lunes 10 h para 8; martes 6 h para 8; resto completo hasta 46 efectivas | 44 normales, 2 extras, 2 faltantes |
+| P06 | Contrato 40 h en 2027, 2 h fuera de horario (42 h en la semana) | 42 normales, 0 extras (la extra empieza después del tope legal de 46 h; criterio temporal hasta reglas STPS) |
+| P07 | Lunes 10 h para 8; martes 6 h para 8; resto completo hasta 46 efectivas | 0 extras (compensación semanal: 46 h efectivas no superan el tope legal); el lunes de 10 h es ordinario |
 | P08 | 2027, 9 h extras distribuidas válidamente | 9 dobles, aviso tope alcanzado |
 | P09 | 2027, 9 h 1 min extras en distribución válida | 9 dobles, 1 min triple; aviso excedente art. 66 |
 | P10 | 2027, 13 h extras | Alcanzado límite agregado; evaluar además distribución |
