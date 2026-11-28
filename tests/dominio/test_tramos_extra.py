@@ -281,21 +281,38 @@ def test_un_tope_que_baja_a_mitad_de_semana_no_produce_tiempo_negativo_ni_pierde
     assert horas(res) == (46 * H, 8 * H, 2 * H, 0) and min(horas(res)) >= 0  # el miercoles ya todo es triple
 
 
+def sin(*claves):
+    return tuple(v for v in BASE if v.clave not in claves)
+
+
+def _con_versiones(versiones, trabajado, programa=None):
+    seg, vers = segmentar_semana(LUN_2027, trabajado, programa, versiones=versiones)
+    return repartir_tramos(asignar_extra(seg, vers)[0], vers)
+
+
 # --- P-47: aviso preventivo con anticipacion configurable (parte pura) ----------------------------
 
-ANTICIPACION = VersionParametro(n.ANTICIPACION_PREVENTIVA_S, 60 * M, Vigencia(date(2026, 1, 1)), "prueba", "patronal")
-
-
 def test_p47_umbral_preventivo_de_8h_con_acumulado_7_59_sin_aviso_y_8_00_con_aviso():
-    justo_antes = clasificar(LUN_2027, con_extras(PROGRAMA_46, lun=4, mar=(3, 59)), extra=(ANTICIPACION,))
+    # La anticipacion general de 60 min sale de la semilla patronal versionada (decision Q-I, 28/11/2026).
+    justo_antes = clasificar(LUN_2027, con_extras(PROGRAMA_46, lun=4, mar=(3, 59)))
     assert AVISO_ART66_PREVENTIVO not in justo_antes.avisos and AL03 not in justo_antes.alertas
-    en_el_umbral = clasificar(LUN_2027, con_extras(PROGRAMA_46, lun=4, mar=4), extra=(ANTICIPACION,))
+    en_el_umbral = clasificar(LUN_2027, con_extras(PROGRAMA_46, lun=4, mar=4))
     assert AVISO_ART66_PREVENTIVO in en_el_umbral.avisos and AL03 in en_el_umbral.alertas
     assert AVISO_ART66_ALCANZADO not in en_el_umbral.avisos  # 8 h < 9 h: solo preventivo
 
 
+def test_la_anticipacion_de_la_empresa_gana_a_la_general_sembrada():
+    propia = VersionParametro(n.ANTICIPACION_PREVENTIVA_S, 120 * M, Vigencia(date(2026, 1, 1)), "prueba", "patronal", "AEI")
+    seg, versiones = segmentar_semana(LUN_2027, con_extras(PROGRAMA_46, lun=4, mar=3), versiones=tuple(BASE) + (propia,))
+    asig = asignar_extra(seg, versiones)[0]  # 7 h de extra
+    assert AVISO_ART66_PREVENTIVO not in repartir_tramos(asig, versiones).avisos  # general: 60 min -> desde 8 h
+    assert AVISO_ART66_PREVENTIVO in repartir_tramos(asig, versiones, empresa="AEI").avisos  # AEI: 120 min -> desde 7 h
+    assert AVISO_ART66_PREVENTIVO not in repartir_tramos(asig, versiones, empresa="CATAB").avisos
+
+
 def test_sin_anticipacion_configurada_no_hay_aviso_preventivo_ni_provisional():
-    res = clasificar(LUN_2027, con_extras(PROGRAMA_46, lun=4, mar=4))
+    versiones = sin(n.ANTICIPACION_PREVENTIVA_S)
+    res = _con_versiones(versiones, con_extras(PROGRAMA_46, lun=4, mar=4))
     assert AVISO_ART66_PREVENTIVO not in res.avisos and res.provisional is False
 
 
@@ -312,15 +329,6 @@ def test_p40_enero_2026_usa_la_distribucion_anterior_y_queda_provisional_por_no_
 
 
 # --- Parametros faltantes: provisional + AL12, nunca excepcion ----------------------------------
-
-def sin(*claves):
-    return tuple(v for v in BASE if v.clave not in claves)
-
-
-def _con_versiones(versiones, trabajado, programa=None):
-    seg, vers = segmentar_semana(LUN_2027, trabajado, programa, versiones=versiones)
-    return repartir_tramos(asignar_extra(seg, vers)[0], vers)
-
 
 def test_sin_distribucion_art_66_la_extra_queda_pendiente_de_clasificacion_con_al12():
     res = _con_versiones(sin(n.ART66_DIARIO_S), con_extras(PROGRAMA_46, lun=2))
