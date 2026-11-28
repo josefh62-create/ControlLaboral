@@ -29,6 +29,8 @@ class VersionParametro:
 
     `valor` es entero: segundos, cantidad (dias) u hora del dia en segundos.
     `origen` separa el limite legal del interno patronal (NL05).
+    `empresa` acota un parametro PATRONAL a una empresa; None = valor general.
+    Los parametros legales son siempre globales (`empresa` se ignora al resolver).
     """
 
     clave: str
@@ -36,3 +38,4 @@ class VersionParametro:
     vigencia: Vigencia
     fuente: str
     origen: str = ORIGEN_LEGAL
+    empresa: str | None = None
