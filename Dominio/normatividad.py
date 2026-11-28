@@ -158,6 +158,10 @@ INTERVALO_MAX_S = "intervalo_max_s"
 # Politica patronal de calendario y tolerancias (T3). Tolerancias en segundos (minutos x60),
 # TO01: enteros de 0 a 15 minutos; sin valor sembrado: cada empresa debe configurarlas (TO02).
 SEMANA_INICIO_DIA = "semana_inicio_dia"  # 0 = lunes ... 6 = domingo (RE01)
+# Anticipacion de los avisos preventivos (plan 4.4, P-47): segundos antes del tope art. 66 semanal.
+# Parametro patronal (no es un limite legal): la semilla general es de 60 min y cada empresa puede
+# sobrescribirla con una version propia; sin ninguna version no hay aviso preventivo.
+ANTICIPACION_PREVENTIVA_S = "anticipacion_preventiva_s"
 TOL_ENTRADA_ANTICIPADA_S = "tol_entrada_anticipada_s"
 TOL_ENTRADA_TARDIA_S = "tol_entrada_tardia_s"
 TOL_SALIDA_ANTICIPADA_S = "tol_salida_anticipada_s"
@@ -285,6 +289,15 @@ SEMILLA_PATRONAL: tuple[VersionParametro, ...] = (
         _M(30),
         Vigencia(_D2026),
         "V1 helpers.py:520-526 (30 min), doc. 03 R006 y Q-D; configurable",
+        ORIGEN_PATRONAL,
+    ),
+    # Decision del propietario 28/11/2026 (Q-I): anticipacion preventiva general de 60 min antes del
+    # tope art. 66 semanal (AL03); configurable por empresa. No es un limite legal.
+    VersionParametro(
+        ANTICIPACION_PREVENTIVA_S,
+        _M(60),
+        Vigencia(_D2026),
+        "Decision del propietario 28/11/2026 (Q-I, anticipacion preventiva AL03; configurable por empresa)",
         ORIGEN_PATRONAL,
     ),
     # RE01: dia de inicio de la semana laboral (0 = lunes); Q-A resuelta por el propietario.

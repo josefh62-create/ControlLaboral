@@ -24,6 +24,14 @@ def test_ventana_duplicados_inicial_30_min_valor_de_v1():
     assert "V1" in v.fuente
 
 
+def test_anticipacion_preventiva_inicial_60_min_patronal_general():
+    v = resolver_vigente(P, n.ANTICIPACION_PREVENTIVA_S, date(2027, 1, 4), ORIGEN_PATRONAL)
+    assert v.valor == minutos_a_segundos(60) and v.origen == ORIGEN_PATRONAL and v.empresa is None
+    assert "28/11/2026" in v.fuente
+    with pytest.raises(FaltaParametro):
+        resolver_vigente(P, n.ANTICIPACION_PREVENTIVA_S, date(2027, 1, 4), ORIGEN_LEGAL)
+
+
 def test_politica_no_se_confunde_con_limite_legal():
     with pytest.raises(FaltaParametro):
         resolver_vigente(P, n.TRASLADO_MAX_S, date(2027, 1, 4), ORIGEN_LEGAL)
