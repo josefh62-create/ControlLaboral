@@ -477,7 +477,13 @@ Actualmente el catálogo se administra en Excel. Migrarlo a la base de datos ind
 | Baja | Desactivar sin borrar checadas, revisiones, relaciones ni exportaciones históricas |
 | Reactivación | Registrar nueva vigencia y conservar la baja previa; no reutilizar identidad de otra persona |
 
-Campos propuestos: ID interno, número de empleado, nombre y apellidos, patrón (empresa con la que el trabajador está dado de alta ante el IMSS) y centro de trabajo/empresa donde labora y checa, cada uno con vigencia, departamento y puesto si existen, fecha de ingreso y baja, estado, horario y política de tolerancias asignados por vigencia. CURP/RFC únicamente cuando sean necesarios y autorizados; no exigir datos bancarios, médicos o biométricos. Conservar identificación histórica en reportes. Definir permisos de consulta, alta, edición, baja, reactivación e importación; registrar usuario, fecha y valores anteriores/nuevos.
+Campos propuestos: ID interno, número de empleado, nombre y apellidos, patrón (empresa con la que el trabajador está dado de alta ante el IMSS) y centro de trabajo/empresa donde labora y checa, cada uno con vigencia, departamento y puesto si existen, fecha de ingreso y baja, estado, horario y política de tolerancias asignados por vigencia. CURP/RFC únicamente cuando sean necesarios y autorizados; no exigir datos bancarios, médicos o biométricos. Conservar identificación histórica en reportes.
+
+**Foto del empleado (decisión del propietario, 26/11/2026):** campo opcional. Se puede cargar desde un archivo o **tomar desde V2 con la cámara web** (PySide6 `QtMultimedia`/`QtMultimediaWidgets`, verificado en PyPortable314 con PySide6 6.11.2). Reglas:
+- Uso solo para identificación visual en pantallas y reportes; **no** se usa para reconocimiento facial ni se generan plantillas biométricas.
+- Es un dato personal: requiere aviso de privacidad y consentimiento del trabajador, y permisos de consulta/edición como el resto del expediente.
+- Se guarda redimensionada y comprimida, con hash y versión; el reemplazo conserva la foto anterior en el historial. Va incluida en el respaldo (§22.3). No se publica en Supabase salvo decisión expresa.
+- Si no hay cámara o el usuario no da permiso, V2 lo informa y permite cargar un archivo; nunca bloquea el alta. Definir permisos de consulta, alta, edición, baja, reactivación e importación; registrar usuario, fecha y valores anteriores/nuevos.
 
 Separar el empleado de su identificador externo en el reloj mediante una relación con dispositivo/origen y vigencias. No asumir que el ID del reloj es globalmente único o permanente. Impedir solapamientos ambiguos; si un código se reutiliza, resolverlo conforme a la fecha de la checada. Los registros sin correspondencia quedan pendientes, nunca se asignan por aproximación de nombre. No borrar empleados con dependencias.
 
