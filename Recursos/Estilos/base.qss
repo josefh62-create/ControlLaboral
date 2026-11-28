@@ -1,0 +1,31 @@
+/* base.qss — geometria comun a ambos temas. Aqui NO van colores. */
+
+QWidget {
+    font-family: "Segoe UI", "Inter", Arial, sans-serif;
+    font-size: 13px;
+}
+
+QPushButton {
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-weight: 600;
+    min-height: 26px;
+}
+
+QFrame[tipo="tarjeta"] {
+    border-radius: 8px;
+}
+
+QFrame#qfrmSidebar QPushButton {
+    text-align: left;
+}
+
+QLabel#qlblTitulo {
+    font-size: 18px;
+    font-weight: 800;
+}
+
+QLabel#qlblBienvenida {
+    font-size: 22px;
+    font-weight: 700;
+}

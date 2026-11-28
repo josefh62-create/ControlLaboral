@@ -27,7 +27,7 @@ Hoy el repositorio solo tiene documentación. Antes de programar el motor (E1) y
 - [x] T1 — Andamiaje: árbol de carpetas de E0, `.gitignore`, `run.bat`, `compilar_ui.bat`, `.vscode/settings.json`, `requirements.txt`, `pytest.ini`, `Config/config.py` (rutas dev/prod, versión de esquema), `README.md`.
 - [x] T2 — Base de datos: `Database/conexion_sqlite.py` (PRAGMAs: `foreign_keys=ON`, WAL, `synchronous=FULL`, `busy_timeout`), `Database/unidad_trabajo.py`, `Database/crear_bd.py` con `_aplicar_migraciones` y `Database/migraciones/0001_esquema_base.sql` (tabla de versión de esquema). Pruebas: migración repetible e idempotente, PRAGMAs activos, rollback de la unidad de trabajo.
 - [x] T3 — Bases MVC: `Modelos/modelo_base.py` (`ModeloBase`) y `Controladores/controlador_base.py` (`ControladorBase`) adaptados del patrón de ControlDeAlmacen/Mi_Tiendita. Pruebas mínimas de `ModeloBase` con BD temporal.
-- [ ] T4 — Ventana principal y tema: `Recursos/Estilos/` (base/light/dark), `ClasesComunes/temas.py`, `Vistas/frm_principal.ui` con sidebar (contenedores `QFrame`), `vista_principal.py`, `controlador_principal.py` con `modulos_disponibles` vacío, `Recursos/Imagenes/controllaboral.qrc`, `main.py`. `.ui` compilado con `compilar_ui.bat`; la app arranca en claro y oscuro.
+- [x] T4 — Ventana principal y tema: `Recursos/Estilos/` (base/light/dark), `ClasesComunes/temas.py`, `Vistas/frm_principal.ui` con sidebar (contenedores `QFrame`), `vista_principal.py`, `controlador_principal.py` con `modulos_disponibles` vacío, `Recursos/Imagenes/controllaboral.qrc`, `main.py`. `.ui` compilado con `compilar_ui.bat`; la app arranca en claro y oscuro.
 - [x] T5 — Arquitectura: paquete `Dominio/` (con `__init__.py`), `tests/arquitectura/test_pureza_dominio.py` (AST: `Dominio/` sin PySide6/sqlite3/`datetime.now`) y prueba de dirección de dependencias entre capas.
 
 ## Criterios de aceptación (doc 03 §13, E0)
@@ -57,5 +57,7 @@ Hoy el repositorio solo tiene documentación. Antes de programar el motor (E1) y
 
 - 2026-11-26: T3 `3d22898` y T5 `2fb0db3` (delegados) + corrección del orquestador `1011272` (Dominio podía no importarse a sí mismo). `pytest -W error`: 42 passed, 2 skipped (Servicios/Repositorios aún no existen). ControlDeAlmacen y Mi_Tiendita sin cambios. Riesgo: medio (468 líneas) → autoverificación + comprobación del orquestador, sin verificador aparte. PR E0-2 abierto.
 
+- 2026-11-26: T4 `f1ffeb5` + corrección `7abb947` (los botones del sidebar se definen en el .ui y se mapean en `_sidebar_botones`, patrón Mi_Tiendita/ControlDeAlmacen; antes se creaban por código, contra la regla 4 del SSD). `compilar_ui.bat` OK; `pytest -W error` offscreen: 56 passed, 2 skipped (repetido por el orquestador); arranque offscreen OK. Riesgo medio (11521 líneas por `controllaboral_rc.py` generado; ~480 de autoría). PR E0-3 abierto. Pendiente: revisión visual del propietario con `run.bat` (tema claro/oscuro, íconos, Salir, tamaños).
+
 ## Siguiente paso
-E0-3 (T4: ventana principal, sidebar y tema) en `feat/e0-ventana`, apilada sobre E0-2.
+Revisión visual del propietario con `run.bat`; luego decidir el modo TDD y arrancar E1 (motor de jornada, doc 03 §13).

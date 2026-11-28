@@ -1,0 +1,20 @@
+/* light.qss — paleta clara. */
+
+QWidget { background-color: #EDF1F6; color: #263041; }
+QMainWindow { background-color: #EDF1F6; }
+QLabel { background: transparent; color: #263041; }
+QLabel#qlblTitulo { color: #1D4FD7; }
+
+QFrame#qfrmSidebar { background-color: #FFFFFF; border-right: 1px solid #D8DEE8; }
+QFrame#qfrmModulos { background: transparent; }
+QFrame#qfrmContenido { background-color: #EDF1F6; }
+QFrame[tipo="tarjeta"] { background-color: #FFFFFF; border: 1px solid #D8DEE8; }
+QStackedWidget, QStackedWidget > QWidget { background: transparent; }
+
+QPushButton          { background-color: #FFFFFF; color: #2B3648; border: 1px solid #C3CCDA; }
+QPushButton:hover    { background-color: #F2F6FD; border-color: #A9BDE4; }
+QPushButton:pressed  { background-color: #E4EBF6; }
+QPushButton:checked  { background-color: #E8EFFE; color: #1D4FD7; border-color: #2563EB; }
+QPushButton:disabled { background-color: #F1F4F9; color: #A6B0BF; border-color: #E0E5EC; }
+QPushButton[tipo="peligro"]       { color: #B42318; border-color: #E0A4A0; }
+QPushButton[tipo="peligro"]:hover { background-color: #FFF4F2; border-color: #C94B42; }

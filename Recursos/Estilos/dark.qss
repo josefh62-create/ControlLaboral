@@ -1,0 +1,20 @@
+/* dark.qss — paleta oscura. */
+
+QWidget { background-color: #1B2130; color: #E4E9F2; }
+QMainWindow { background-color: #1B2130; }
+QLabel { background: transparent; color: #E4E9F2; }
+QLabel#qlblTitulo { color: #7FA6FF; }
+
+QFrame#qfrmSidebar { background-color: #242B3D; border-right: 1px solid #343D55; }
+QFrame#qfrmModulos { background: transparent; }
+QFrame#qfrmContenido { background-color: #1B2130; }
+QFrame[tipo="tarjeta"] { background-color: #242B3D; border: 1px solid #343D55; }
+QStackedWidget, QStackedWidget > QWidget { background: transparent; }
+
+QPushButton          { background-color: #2B3350; color: #E4E9F2; border: 1px solid #3F4A6B; }
+QPushButton:hover    { background-color: #343E5E; border-color: #5B78C8; }
+QPushButton:pressed  { background-color: #222A44; }
+QPushButton:checked  { background-color: #26396B; color: #BFD3FF; border-color: #5B8CFF; }
+QPushButton:disabled { background-color: #202637; color: #6F7A94; border-color: #2D3550; }
+QPushButton[tipo="peligro"]       { color: #FF8A80; border-color: #8A3D38; }
+QPushButton[tipo="peligro"]:hover { background-color: #3A2428; border-color: #D2635A; }
