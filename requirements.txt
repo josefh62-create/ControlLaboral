@@ -1,0 +1,3 @@
+# Runtime: Python 3.14.7 portatil (PyPortable314). No usar PyPortable311.
+PySide6==6.11.2
+pytest==9.1.1
