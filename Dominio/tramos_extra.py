@@ -322,7 +322,7 @@ def _avisos_semanales(trozos, clasificados, topes, versiones, empresa, avisos: s
         avisos.add(AVISO_ART68_SUPERADO if triple > tope_68 else AVISO_ART68_ALCANZADO)
 
 
-_ALERTA_DE_AVISO = {
+ALERTA_DE_AVISO = {
     AVISO_ART66_PREVENTIVO: AL03,
     AVISO_ART66_ALCANZADO: ALERTA_POR_LIMITE[n.ART66_SEMANAL_S],
     AVISO_ART66_SUPERADO: ALERTA_POR_LIMITE[n.ART66_SEMANAL_S],
@@ -375,7 +375,7 @@ def repartir_tramos(
     alertas = set(asignacion.alertas)
     _avisos_semanales(trozos, clasificados, topes, versiones, empresa, avisos, alertas, motivos)
     dias = _resumen_por_dia(clasificados, asignacion.jornadas, versiones, motivos)
-    alertas |= {_ALERTA_DE_AVISO[a] for a in avisos}
+    alertas |= {ALERTA_DE_AVISO[a] for a in avisos}
     informativos = frozenset({AVISO_INFO_TOPE_ART61_COMPENSADO} if any(d.excede_tope_art61 for d in dias) else ())
     if motivos:
         alertas.add(AL12)
