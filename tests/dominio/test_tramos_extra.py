@@ -35,6 +35,7 @@ from Dominio.tramos_extra import (
     AVISO_ART68_SUPERADO,
     AVISO_DISTRIBUCION_DIARIA,
     AVISO_DISTRIBUCION_DIAS,
+    AVISO_INFO_TOPE_ART61_COMPENSADO,
     AVISO_TOTAL_DIARIO_ALCANZADO,
     AVISO_TOTAL_DIARIO_SUPERADO,
     CAT_DOBLE,
@@ -429,6 +430,26 @@ def test_el_tope_art_61_diario_se_lee_del_tipo_declarado_y_no_del_tiempo_trabaja
     martes_d = {d.dia_logico: d for d in diurna.dias}[dia_de(LUN_2027, 1)]
     assert martes_d.tope_art61_s == 8 * H and not martes_d.excede_tope_art61  # 8 h exactas
     assert horas(diurna)[1:] == (0, 0, 0)  # el tope diario art. 61 no convierte ordinario en extra (plan 5.2)
+
+
+PROGRAMA_46_CON_LUNES_LARGO = {0: [(8, 18)], 1: [(8, 16)], 2: [(8, 16)], 3: [(8, 16)], 4: [(8, 14)], 5: [(8, 14)]}
+
+
+def test_q_h_dia_ordinario_sobre_el_tope_art_61_compensado_en_la_semana_da_aviso_informativo_sin_alerta_ni_cambio():
+    programa = PROGRAMA_46_CON_LUNES_LARGO  # lunes 10 h para un tope diurno de 8 h; la semana suma 46 h
+    res = clasificar(LUN_2027, exacto(programa), programa)
+    assert AVISO_INFO_TOPE_ART61_COMPENSADO in res.avisos_informativos
+    assert AVISO_INFO_TOPE_ART61_COMPENSADO not in res.avisos  # no es un aviso de limite con alerta
+    assert res.alertas == () and res.provisional is False  # informativo: ningun codigo AL
+    assert horas(res) == (46 * H, 0, 0, 0)  # no cambia ni un minuto del calculo
+    assert {d.dia_logico for d in res.dias if d.excede_tope_art61} == {LUN_2027}
+
+
+def test_q_h_sin_dias_sobre_el_tope_art_61_no_hay_aviso_informativo():
+    res = clasificar(LUN_2027, exacto(PROGRAMA_46))
+    assert res.avisos_informativos == frozenset()
+    extra_en_lunes = clasificar(LUN_2027, con_extras(PROGRAMA_46, lun=3))  # extra fuera de horario, no ordinario
+    assert extra_en_lunes.avisos_informativos == frozenset()
 
 
 def test_parcial_no_tiene_tope_art_61_propio_y_no_marca_exceso():

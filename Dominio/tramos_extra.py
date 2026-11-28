@@ -25,7 +25,9 @@ resultado `provisional` con AL12 (los avisos de limites cuyo valor falta simplem
 
 La autorizacion de la extra (RE03, P-38) es un atributo independiente: se etiqueta y jamas quita tiempo.
 El tope art. 61 DIARIO se lee del tipo declarado por el horario (`JornadaClasificada.tipo_efectivo`),
-nunca del tiempo trabajado (decision Q-B, 27/11/2026); solo se informa por dia, no reclasifica.
+nunca del tiempo trabajado (decision Q-B, 27/11/2026); solo se informa por dia, no reclasifica. Un dia
+ordinario por encima de ese tope, compensado dentro de la semana, produce el aviso informativo
+`AVISO_INFO_TOPE_ART61_COMPENSADO` (decision Q-H, sin codigo AL y sin cambiar ningun minuto).
 """
 
 from dataclasses import dataclass, replace
@@ -70,6 +72,9 @@ AVISO_DISTRIBUCION_DIARIA = "distribucion_art66_diaria"
 AVISO_DISTRIBUCION_DIAS = "distribucion_art66_dias"
 AVISO_TOTAL_DIARIO_ALCANZADO = "total_diario_alcanzado"
 AVISO_TOTAL_DIARIO_SUPERADO = "total_diario_superado"
+
+# Avisos meramente informativos (decision Q-H): NO son un codigo AL, no alteran minutos ni el estado.
+AVISO_INFO_TOPE_ART61_COMPENSADO = "tope_art61_diario_compensado_en_semana"
 
 AL02 = "AL02"  # tiempo extraordinario detectado (informativo/revision)
 AL03 = "AL03"  # proximo al tope art. 66 semanal (preventivo)
@@ -123,6 +128,7 @@ class ResultadoExtra:
     alertas: tuple[str, ...] = ()
     avisos: frozenset[str] = frozenset()
     motivos: tuple[str, ...] = ()
+    avisos_informativos: frozenset[str] = frozenset()  # sin codigo AL; el detalle por dia esta en `dias`
 
     def total_s(self, categoria: str) -> int:
         return sum(c.segmento.intervalo.duracion for c in self.segmentos if c.categoria == categoria)
@@ -370,9 +376,10 @@ def repartir_tramos(
     _avisos_semanales(trozos, clasificados, topes, versiones, empresa, avisos, alertas, motivos)
     dias = _resumen_por_dia(clasificados, asignacion.jornadas, versiones, motivos)
     alertas |= {_ALERTA_DE_AVISO[a] for a in avisos}
+    informativos = frozenset({AVISO_INFO_TOPE_ART61_COMPENSADO} if any(d.excede_tope_art61 for d in dias) else ())
     if motivos:
         alertas.add(AL12)
     return ResultadoExtra(
         asignacion.semana, asignacion.criterio, tuple(clasificados), asignacion.no_confirmados, dias,
-        asignacion.provisional or bool(motivos), tuple(sorted(alertas)), frozenset(avisos), tuple(sorted(motivos)),
+        asignacion.provisional or bool(motivos), tuple(sorted(alertas)), frozenset(avisos), tuple(sorted(motivos)), informativos,
     )
