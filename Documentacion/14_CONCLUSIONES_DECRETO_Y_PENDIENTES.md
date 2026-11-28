@@ -37,10 +37,11 @@ Base: texto literal del decreto en `00_FUENTE_LEGAL_DECRETO_2026-05-01.md`. Inte
 3. **Criterio de inicio de extra como parámetro normativo versionado,** no código:
    - «Diario y semanal» (plan, P07): extra = lo que excede el horario del día o el tope semanal, lo que ocurra primero.
    - «Semanal con acuerdo» (postura del propietario): extra = lo que excede el tope/horario semanal; los días cortos se compensan con los largos dentro de la misma semana.
-   - Cada semana guarda qué criterio usó. Mientras no haya dictamen, se recomienda calcular y mostrar **ambos** resultados.
+   - Cada semana guarda qué criterio usó.
+   - *Actualización 24/11/2026:* el propietario eligió «semanal con acuerdo» (§5); ya no se calculan ni muestran ambos criterios en paralelo. El criterio sigue siendo un parámetro versionado por si el reglamento STPS o el asesor laboral lo cambian.
 4. Siempre: tope diario 12 h, 4 h/día y 4 días/semana de extra art. 66, excedente art. 68 y descanso semanal, como alertas independientes que nunca borran tiempo.
 
-## 5. Decisiones del 25/11/2026
+## 5. Decisiones del 24/11/2026
 
 - Se rehacen contratos y reglamento. Esquema previsto: 5 × 8 + 6 (46 h). El registro electrónico espera las disposiciones STPS (01/01/2027).
 - Todos los topes 2027–2030 son configurables; la distribución del horario puede cambiar cada año (p. ej. 2028: 5 × 7 h 36 min + 6 h = 44 h). Cálculo en minutos. Plan §4.2 actualizado.
@@ -48,11 +49,22 @@ Base: texto literal del decreto en `00_FUENTE_LEGAL_DECRETO_2026-05-01.md`. Inte
 
 - **Q06 resuelta:** sábado y domingo dejan de tener jornada fija de 8 h; los horarios se asignan por trabajador/grupo y por año (plan §4.2).
 - **Q07 resuelta:** V2 calcula solo hacia adelante, desde el 01/01/2027 (tope 46 h y reglas STPS del registro electrónico). No reproduce resultados históricos de V1; el histórico de V1 se conserva para consulta. Riesgo: quedan ~5 semanas; V1 debe seguir disponible como respaldo durante la operación paralela (plan §20).
-- **Q08 (parcial):** los usuarios administran los códigos; en un reloj compartido por varias empresas el código es único. V2 identifica por (reloj, código, vigencia) → empleado y bloquea solapamientos (plan §13.1). Si el reglamento STPS cambia la identificación (CURP/NSS), solo cambia esa relación. Pendiente: qué es «Empresa base».
+- **Q08 (parcial):** los usuarios administran los códigos; en un reloj compartido por varias empresas el código es único. V2 identifica por (reloj, código, vigencia) → empleado y bloquea solapamientos (plan §13.1). Si el reglamento STPS cambia la identificación (CURP/NSS), solo cambia esa relación.
+- **Q08 resuelta (26/11/2026):** «Empresa base» es el patrón IMSS del trabajador (AEI fue la primera empresa del sistema). Un trabajador puede checar en una empresa y estar dado de alta con otra; V2 guarda patrón y centro de trabajo por separado, con vigencia (plan §13.1).
+- **Horario incompatible con el tope (26/11/2026):** si la extra semanal supera la suma de excesos diarios (horario acordado por encima del tope), el remanente se asigna a los últimos minutos programados de la semana y se emite HO03. No se bloquea el cálculo (plan §5.2).
+- **Varias empresas por trabajador (26/11/2026):** un trabajador puede checar en relojes de distintas empresas en la misma semana e incluso en la misma jornada (entrada en CATAB, salida en AEI). V2 usa un solo registro de empleado, empareja checadas sobre la secuencia unificada de todos los relojes y acumula por trabajador, patrón y semana contra un solo tope; cada segmento conserva su empresa y reloj de origen; los traslapes entre relojes generan alerta y no se cuentan doble (plan §5.1 paso 4, §5.3 y §13.1).
+- **Traslado entre empresas (26/11/2026):** el hueco entre una salida en una empresa y la entrada en otra el mismo día cuenta como tiempo efectivo, etiquetado «traslado entre empresas»; si supera el máximo configurable (inicial 60 min) queda pendiente de revisión. Interpretación del art. 58 LFT (tiempo a disposición del patrón), ya transcrito en el documento 00 («tiempo durante el cual el trabajador está a disposición del patrón»): requiere validación del asesor laboral.
+- **Q09 resuelta (26/11/2026):** hoy no existe calendario de festivos. En V2 es obligatorio uno por año: sin él, las semanas son provisionales (no se cierran ni exportan) y se alerta desde el 1 de diciembre previo. Se precargan como sugerencia los descansos del art. 74 LFT, que RH confirma; la lista debe verificarse contra la LFT vigente (plan RE02).
+- **Q10 parcial (26/11/2026):** cada empresa designa a su autorizador de tiempo extra (AEI: dirección; CATAB: jefe de producción). Autoriza la empresa donde se trabajó cada segmento de extra, aunque el patrón sea otra; el traslado se atribuye a la empresa de destino (plan RE03). Pendiente: número de usuarios y roles.
+- **Colores y firmas del reporte (26/11/2026):** se conserva el código de colores de V1 (amarillo omisión, azul aclaración administrativa, rojo falta, naranja día corto compensado) más morado para traslado entre empresas (plan §7.3). El reporte de tiempo extra lleva cuatro firmas: autoriza, elaboró, Vo.Bo. de Dirección y RH que revisa (plan §7.4). Usuarios por empresa: auxiliar administrativo (elabora, carga reportes y captura aclaraciones), autorizador (aprueba; nunca lo que él capturó) y RH (revisa y cierra); Dirección da Vo.Bo. sin usuario propio (plan §6). **Q10 resuelta.**
+- **Q11 resuelta (26/11/2026):** la nota BATAB está aprobada y vigente. Reparto que inicia a las 2:00 a. m.: entrada real como aclaración con evidencia (auxiliar captura, autorizador aprueba); posible jornada nocturna (art. 60, tope 7 h) a validar con el asesor. Alimentos por T.E.: reglas configurables por empresa y vigencia, sin cálculo de importes (plan cap. 17.1).
+- **Q12 resuelta (26/11/2026):** V2 empieza de cero; las empresas arrancan en blanco y no se migran las BD de V1; solo se reutiliza el código que funcione. Única excepción: importación única del catálogo de empleados desde Excel, con unión de personas repetidas entre empresas confirmada por RH (plan §13.2).
+- **Q13 resuelta (26/11/2026):** una sola PC; de 40 a 200 empleados por empresa. SQLite local es suficiente; cada usuario entra con su propia cuenta en esa PC; el respaldo es crítico (plan §22.1).
+- **Q14 resuelta (26/11/2026):** turno desde las 7:00; hoy el mismo trabajador puede seguir hasta las 22:00, práctica que se pretende terminar (desde 2027 rebasa en 2 h el límite diario del art. 66: V2 registra todo y alerta). No se esperan menores de edad (alerta si la CURP o la fecha de nacimiento indican menos de 18). **Principio NL07:** V2 contempla todas las posibilidades de la LFT (nocturna, mixta, parcial, menores y demás regímenes) aunque hoy no se usen; los arts. 22, 60 y 173–180 ya están transcritos en el documento 00.
+- **Q15 resuelta (26/11/2026):** V1 no tiene función de respaldo y los Excel no se respaldan. V2 incluye Herramientas → Respaldar/Restaurar de toda la información laboral que la ley exija conservar, respaldo automático y destino elegido por el usuario (USB, OneDrive, nube…). Plazo de conservación: art. 804 LFT, último año y un año después de terminada la relación laboral; pendiente lo que fijen las disposiciones STPS (plan §22.3).
 
 ## 6. Preguntas pendientes
 
-1. ¿Qué esquemas de jornada usan hoy o quieren usar (5 × 8 + sábado, 6 × 7:40, 4 × 12, turnos nocturnos)? ¿Cuáles tienen acuerdo firmado?
-2. ¿Aceptan que el criterio de inicio de extra sea configurable y que el asesor laboral elija la lectura (A) o (B) y el criterio de Q05?
-3. ¿Mostramos ambos cálculos en paralelo mientras llega el dictamen?
-4. Siguientes preguntas de la auditoría: Q06 (sábado y domingo fijos en 8 h), Q07 a Q15 (ver `01_AUDITORIA_SISTEMA_ACTUAL.md` §9).
+1. ¿Qué otros esquemas de jornada usarán además de 5 × 8 + 6 (turnos nocturnos, 4 × 12, etc.)? ¿Cuáles tendrán acuerdo art. 58 firmado? (Relacionada con Q14.)
+2. Validar con el asesor laboral la lectura (A)/(B) y el criterio de Q05 cuando haya dictamen o reglamento STPS.
+3. ~~Transcribir los artículos de la LFT no reformados~~ Hecho el 26/11/2026 (documento 00, sección «Artículos de la LFT no reformados que usa el diseño»). Pendiente: transcribir las disposiciones STPS del registro electrónico cuando se publiquen.

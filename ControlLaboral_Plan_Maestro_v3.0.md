@@ -110,6 +110,7 @@ Catálogo versionado de reglas legales. Campos sugeridos (adaptar a tablas exist
 - NL04: si falta una versión aplicable, bloquear únicamente el cálculo definitivo; conservar registros y mostrar incidencia.
 - NL05: los límites legales deben ser independientes de límites patronales más restrictivos.
 - NL06: no confundir el límite art. 66 con el límite total art. 68; ambos generan alertas distintas.
+- NL07 (principio del propietario, 26/11/2026): V2 debe contemplar **todas las posibilidades que prevé la LFT**, aunque hoy la empresa no las tenga: jornadas diurna, nocturna y mixta; jornada parcial o reducida; trabajadores menores de edad con su régimen especial (restricciones de jornada, prohibición de tiempo extra y de trabajo nocturno, según la LFT); descanso semanal y obligatorio trabajado; y demás regímenes especiales. Que un caso no se use hoy no justifica dejarlo fuera del modelo; se habilita por configuración. Los arts. 22, 22 Bis, 60, 63, 64, 73–75 y 173–180 LFT están transcritos en `Documentacion/00`, con sus consecuencias para el diseño (p. ej. menores de 15 prohibidos; de 15 a 16, máximo 6 h diarias en periodos de 3 h; menores de 18 sin horas extra, domingos, descansos obligatorios ni trabajo después de las 22:00; fecha de nacimiento obligatoria en su registro, art. 180 II). Otros regímenes especiales (título sexto) se transcriben antes de implementarse.
 
 ### 4.2 Horarios y asignaciones (HO)
 
@@ -185,8 +186,10 @@ Si el sistema importa checadas por lotes, las alertas se emiten al revisar/impor
 ### 4.5 Otras reglas (RE)
 
 - RE01: día/hora de inicio de semana laboral definido y documentado; no confundir con corte de nómina. No reiniciar acumulados en mitad de semana por cambio de mes, año o periodo de pago.
-- RE02: calendario de festivos legales versionado y descansos específicos por trabajador.
-- RE03: autorización de extras como atributo independiente; no excluye tiempo efectivamente trabajado.
+- RE02: calendario de festivos legales versionado y descansos específicos por trabajador. Hoy no existe ningún calendario (V1 no lo tiene); en V2 es **obligatorio capturar uno por cada año** (decisión del propietario, 26/11/2026).
+  - Sin calendario confirmado para el año, el cálculo de sus semanas es provisional: se puede consultar, pero no cerrar, autorizar ni exportar a nómina. Desde el 1 de diciembre se alerta si falta el calendario del año siguiente.
+  - Al crear un año, V2 precarga como sugerencia los descansos obligatorios del art. 74 LFT (incluidos los móviles: lunes por regla, 1 de octubre en transmisión del Ejecutivo Federal, jornadas electorales). RH revisa, agrega los días propios de la empresa y confirma; hasta entonces el calendario no es válido. La lista coincide con el art. 74 vigente (incluida la fracción VII reformada en 2024), transcrito en `Documentacion/00`.
+- RE03: autorización de extras como atributo independiente; no excluye tiempo efectivamente trabajado. Cada empresa designa quién autoriza (p. ej. AEI: dirección; CATAB: jefe de producción): el autorizador es un usuario con rol de autorización asignado por empresa y vigencia, no texto libre como en V1 (decisión del propietario, 26/11/2026). Autoriza la empresa donde se trabajó cada segmento de extra (según el reloj de origen del segmento, §5.1 paso 4), aunque el patrón sea otra; un tramo de «traslado entre empresas» se atribuye a la empresa de destino. El reporte sigue a nombre del patrón, que puede consultar las autorizaciones.
 - RE04: reglas de compensación o redistribución solo con base válida, acuerdo y trazabilidad; desactivadas por defecto.
 - RE05: detección de duplicados, checadas faltantes y correcciones manuales sin destrucción de originales.
 - RE06: permisos, vacaciones, incapacidades y otras incidencias no son horas efectivamente trabajadas; conservarlas separadas.
@@ -199,7 +202,7 @@ Si el sistema importa checadas por lotes, las alertas se emiten al revisar/impor
 1. Importar evento con identificador de trabajador/dispositivo, fecha y hora originales, zona horaria, tipo de movimiento si existe, identificador de origen y lote.
 2. Garantizar idempotencia de importación; si el dispositivo no ofrece ID, usar clave compuesta documentada y revisión de colisiones. Conservar evidencia de duplicados reales.
 3. Ordenar cronológicamente por instante, no por orden de importación. Identificar desfases de reloj, eventos futuros y cambios de fecha.
-4. Emparejar entradas y salidas según la semántica del dispositivo. No asumir alternancia perfecta. Marcar registros ambiguos y pedir revisión; no fabricar una salida definitiva.
+4. Emparejar entradas y salidas según la semántica del dispositivo. No asumir alternancia perfecta. Marcar registros ambiguos y pedir revisión; no fabricar una salida definitiva. El emparejamiento se hace sobre la secuencia unificada del trabajador con las checadas de **todos** los relojes, no por reloj: una jornada puede empezar en el reloj de una empresa y terminar en el de otra (p. ej. entrada en CATAB y salida en AEI; decisión del propietario, 26/11/2026). Cada checada conserva su reloj y empresa de origen. Si dos intervalos de relojes distintos se traslapan, alertar y no contar dos veces el mismo minuto. **Traslado entre empresas:** cuando una salida en el reloj de una empresa va seguida, el mismo día, de una entrada en el reloj de otra, el hueco cuenta como tiempo efectivo con la etiqueta «traslado entre empresas»; si supera el máximo configurable (parámetro versionado, valor inicial 60 min), queda pendiente de revisión y no se computa automáticamente (decisión del propietario, 26/11/2026; interpretación del art. 58 LFT —tiempo a disposición del patrón—, texto transcrito en `Documentacion/00`; requiere validación del asesor laboral).
 5. Asociar jornada lógica y día de inicio a turnos nocturnos, separando segmentos por fecha real cuando sea necesario para vigencias y festivos. Evitar doble contabilización.
 6. Obtener horario, norma y tolerancias vigentes. Si faltan, informar y dejar resultado provisional.
 
@@ -209,10 +212,10 @@ Clasificar intervalos efectivos confirmados, no solo la diferencia entre la prim
 
 Para cada intervalo, dividir en fronteras relevantes: inicio/fin de horario, descansos, medianoche, fin de semana, cambio de vigencia y agotamiento de topes. Cada segmento conserva inicio, fin, duración, categoría base, etiquetas adicionales y regla aplicada.
 
-**Criterio de inicio de extra (decisión del propietario, 25/11/2026; parámetro normativo versionado, sujeto al reglamento STPS y al dictamen del asesor laboral):** criterio «semanal con acuerdo» por defecto desde 2027.
+**Criterio de inicio de extra (decisión del propietario, 24/11/2026; parámetro normativo versionado, sujeto al reglamento STPS y al dictamen del asesor laboral):** criterio «semanal con acuerdo» por defecto desde 2027.
 
 1. **Cuánto:** extra semanal = máx(0, tiempo efectivo confirmado de la semana − tope ordinario semanal vigente, p. ej. 46 h en 2027). Los días cortos se compensan con los largos dentro de la misma semana.
-2. **Dónde:** las horas extra se asignan solo a segmentos de exceso diario (trabajo confirmado fuera del horario acordado del día, incluido el trabajo en días sin horario). Si el exceso total supera la extra semanal (porque hubo faltantes), los excesos más antiguos compensan los faltantes y la extra se asigna a los excesos más recientes. Por construcción, la extra semanal nunca supera la suma de excesos diarios.
+2. **Dónde:** las horas extra se asignan solo a segmentos de exceso diario (trabajo confirmado fuera del horario acordado del día, incluido el trabajo en días sin horario). Si el exceso total supera la extra semanal (porque hubo faltantes), los excesos más antiguos compensan los faltantes y la extra se asigna a los excesos más recientes. Si la extra semanal supera la suma de excesos diarios (solo ocurre cuando el horario acordado de la semana rebasa el tope vigente), el remanente se asigna a los últimos minutos programados de la semana, en orden cronológico inverso, y se emite la alerta HO03 «horario incompatible con el tope legal». El tiempo nunca se pierde ni se bloquea el cálculo; RH debe corregir el horario (decisión del propietario, 26/11/2026).
 3. **Límites:** con esa asignación se evalúan los límites del art. 66 (4 h/día, 4 días/semana), el tope diario de 12 h del art. 68 y los tramos doble/triple. Nunca se cargan al último día todas las extras de la semana.
 4. El criterio se guarda en cada semana calculada. Si el reglamento STPS o el dictamen lo cambian, se crea una nueva versión del parámetro, sin cambiar código.
 
@@ -224,11 +227,13 @@ Ejemplo 2027: trabajador con 40 h normales acumuladas de lunes a viernes; sábad
 
 Ejemplo 2027, horario 5 × 8 + 6: trabaja 9 h de lunes a sábado (54 h). Extra semanal = 54 − 46 = 8 h. Excesos diarios: 1 h lunes a viernes + 3 h sábado = 8 h. Resultado: 1 h extra por día de lunes a viernes y 3 h el sábado. Ningún día rebasa 4 h; extras en 6 días → alerta del límite de 4 días del art. 66, sin borrar tiempo.
 
-Ejemplo de compensación: lunes 10 h, martes 10 h, sábado 4 h, resto conforme a horario (46 h). Extra semanal = 0; los excesos de lunes y martes compensan el faltante del sábado. Si el sábado fueran 6 h (48 h): extra = 2 h, asignada al exceso más reciente (martes).
+Ejemplo de compensación, horario 5 × 8 + 6: lunes 10 h, martes 10 h, miércoles 4 h, jueves 8 h, viernes 8 h, sábado 6 h (46 h). Extra semanal = 0; los excesos de lunes y martes (4 h) compensan el faltante del miércoles (4 h). Si el miércoles fueran 6 h (48 h): extra = 2 h; el exceso más antiguo (lunes) compensa el faltante de 2 h y la extra se asigna al exceso más reciente (martes, 2 h).
+
+Ejemplo de horario incompatible, 2027: horario acordado 6 × 8 h (48 h) trabajado exactamente. Extra semanal = 48 − 46 = 2 h; no hay excesos diarios, así que las 2 h se asignan a los últimos 120 min programados del sábado y se emite HO03.
 
 ### 5.3 Acumulación semanal y clasificación de extras
 
-- Acumular ordinarias y extraordinarias por trabajador y semana laboral, no por reloj o centro; si existe más de un contrato/régimen, definir alcance con RH.
+- Acumular ordinarias y extraordinarias por trabajador, patrón y semana laboral, sumando las checadas de todos los relojes y centros de trabajo de esa semana contra un solo tope (decisión del propietario, 26/11/2026). La extra se reporta a nombre del patrón; cada segmento conserva la empresa y el reloj donde se generó. Si existe más de un contrato/régimen o más de un patrón simultáneo, definir alcance con RH.
 - Marcar primero cada segmento como dentro de horario o exceso diario; calcular la extra semanal según el criterio vigente (§5.2) y asignarla a los segmentos de exceso. El exceso no asignado como extra es ordinario. Nunca contar el mismo minuto dos veces como ordinario y extra.
 - En casos regulares, asignar cronológicamente el tramo doble hasta el máximo semanal art. 66 y el excedente al tramo triple. Si un segmento cruza umbral, dividirlo exactamente.
 - Evaluar por separado límite diario y número de días de extras art. 66. Si se rebasan antes del umbral semanal, marcar revisión jurídica de clasificación; no ocultar ni declarar automáticamente legal el tramo por ser menor a 9 h.
@@ -289,6 +294,12 @@ Adaptar las siguientes entidades lógicas a la estructura existente; no crear ta
 - Usar claves e índices por trabajador/fecha y restricciones de integridad de vigencias. Procesar transaccionalmente; evitar revisiones concurrentes inconsistentes.
 - Conservar fecha local e instante inequívoco, considerando zonas mexicanas y cambios históricos de horario.
 - Control de acceso según perfiles existentes: consulta, revisión, autorización y configuración legal. Registrar modificaciones y exportaciones relevantes.
+- Usuarios iniciales (decisión del propietario, 26/11/2026): tres por empresa, con separación de funciones:
+  1. **Auxiliar administrativo (elabora):** carga los reportes del reloj, captura aclaraciones de checadas faltantes y genera el reporte semanal.
+  2. **Autorizador** (el designado por la empresa, RE03): aprueba o rechaza aclaraciones y tiempo extra; es quien tiene autoridad sobre las checadas faltantes. No puede aprobar lo que él mismo capturó.
+  3. **RH (revisa):** valida y cierra el reporte.
+  - **Dirección (Vo.Bo.):** firma el reporte (§7.4); no requiere usuario propio. En AEI coincide con el autorizador.
+  «Modificar checadas» se implementa siempre como aclaración del módulo de incidencias (cap. 14), nunca como edición o alta de checadas del reloj. Los roles se asignan por empresa y vigencia; el modelo debe admitir más usuarios y roles después.
 - No replicar plantillas biométricas si basta con el identificador del reloj. Proteger datos personales y respaldos; definir retención conforme a obligaciones aplicables, sin inventar un plazo único.
 - Cierres: una corrección posterior genera nueva revisión, no sobrescribe silenciosamente el resultado aprobado. Mostrar original, diferencia y versión recalculada.
 
@@ -308,14 +319,32 @@ Ejemplo: 16:00–16:25, extra confirmada; 06:50–07:00, pendiente de confirmar;
 
 Columnas: día, horario previsto, horas programadas, checadas, normales, dobles, triples, extras pendientes de clasificación, descanso/festivo trabajado, faltante, pendiente, acumulados y alertas. Resumen de límites legales y contractuales, versión y fecha de revisión. Mostrar HH:mm, no confundir 7.40 decimal con 7 h 40 min.
 
+**Código de colores por día** (se conserva el de V1, `tiempo_extra/Vistas/vista_tiempo_extra.py` y `ClasesComunes/exportar_reporte.py`, con ajustes; decisión del propietario, 26/11/2026). Se aplica igual en pantalla y en el reporte impreso/exportado, siempre con leyenda:
+
+| Prioridad | Color (fondo / texto) | Situación en V2 |
+|---|---|---|
+| 1 | Amarillo `#FFFF00` / negro | Falta la checada de entrada o de salida (omisión) |
+| 2 | Azul `#1313E2` / blanco | Hay una aclaración administrativa (cap. 14); la checada original no se modifica. En el reporte solo se pinta el dato aclarado |
+| 3 | Rojo `#FF0000` / amarillo | Falta: día laborable sin checadas ni aclaración |
+| 4 | Naranja `#C76E00` / blanco | Día corto: trabajó menos que su horario; el faltante se compensa dentro de la semana (§5.2) |
+| 5 | Morado `#7030A0` / blanco (provisional) | Incluye tiempo de traslado entre empresas (§5.1 paso 4) |
+| — | Verde claro | Hay tiempo extra (solo pantalla) |
+| — | Gris | Día de descanso (en el reporte, tinte suave en fin de semana) |
+| — | Rojo claro | Dato capturado inválido (solo pantalla) |
+
+En pantalla, estos colores deben conservar legibilidad y contraste en modo claro y oscuro (variantes por tema); en el reporte impreso se usan los valores fijos de la tabla.
+
 ### 7.4 Reportes y exportaciones
 
 Revisar los existentes y ampliar solo si es necesario: revisión diaria/semanal, excepciones, exceso de jornada, límites próximos, horarios incompatibles, checadas originales y ajustes, evidencia individual de inicio/fin de jornada, diferencias de recalculación y exportación de totales para sistemas externos. Conservar contratos de integración; si cambian columnas o unidades, versionar exportación. No incluir cálculo de nómina.
+
+**Firmas del reporte de tiempo extra** (decisión del propietario, 26/11/2026): además de la autorización en el sistema, el reporte lleva cuatro firmas: (1) quien autoriza el tiempo extra, (2) quien lo elaboró (un auxiliar administrativo encargado, que también lleva otros registros de la empresa), (3) Vo.Bo. de la Dirección y (4) el departamento de RH, que lo revisa. El reporte muestra nombre y cargo de cada firmante y el estado de cada firma; mientras falte alguna, el reporte queda pendiente de validación.
 
 ## 8. Transiciones y casos que requieren decisión
 
 - Semana que cruza 01/01/2027 (por ejemplo 28/12/2026–03/01/2027 si la semana inicia lunes): aplicar horarios/normas por fecha, conservar semana completa y no reiniciar acumulados artificialmente. La regla exacta de tope semanal transitorio requiere validación jurídica; no imponer prorrateo ni aplicar 46/48 a toda la semana sin fundamento. Si no hay criterio aprobado, resultado provisional con alerta y evidencia intacta.
 - Turno que cruza medianoche o una vigencia: preservar jornada lógica para límites diarios y segmentar fechas para condiciones legales; no duplicar minutos.
+- Jornadas prolongadas actuales (Q14, propietario, 26/11/2026): hoy el turno inicia a las 7:00 y el mismo trabajador puede seguir hasta las 22:00; la empresa pretende terminar esa práctica. Desde 2027, con 8 h ordinarias y 1 h de comida no computable, el máximo legal del día es 20:00 (art. 66: 4 h extra diarias). V2 registra todo el tiempo trabajado y alerta el exceso del art. 66; no lo recorta. El tramo 20:00–22:00 cae en periodo nocturno: confirmar con el asesor que, siendo extra, no cambia el tipo de jornada.
 - Cambio de horario a mitad de semana: aplicar asignación vigente y validar el total; no reemplazar histórico.
 - Horarios flexibles, redistribuciones acordadas, guardias, emergencias, menores y regímenes especiales: definir reglas y pruebas específicas si existen; no habilitar excepciones genéricas sin aprobación.
 - Descanso semanal/festivo trabajado: identificar concurrencias con tiempo extraordinario; criterio de clasificación validado por RH/jurídico.
@@ -448,11 +477,15 @@ Actualmente el catálogo se administra en Excel. Migrarlo a la base de datos ind
 | Baja | Desactivar sin borrar checadas, revisiones, relaciones ni exportaciones históricas |
 | Reactivación | Registrar nueva vigencia y conservar la baja previa; no reutilizar identidad de otra persona |
 
-Campos propuestos: ID interno, número de empleado, nombre y apellidos, empresa/centro de trabajo, departamento y puesto si existen, fecha de ingreso y baja, estado, horario y política de tolerancias asignados por vigencia. CURP/RFC únicamente cuando sean necesarios y autorizados; no exigir datos bancarios, médicos o biométricos. Conservar identificación histórica en reportes. Definir permisos de consulta, alta, edición, baja, reactivación e importación; registrar usuario, fecha y valores anteriores/nuevos.
+Campos propuestos: ID interno, número de empleado, nombre y apellidos, patrón (empresa con la que el trabajador está dado de alta ante el IMSS) y centro de trabajo/empresa donde labora y checa, cada uno con vigencia, departamento y puesto si existen, fecha de ingreso y baja, estado, horario y política de tolerancias asignados por vigencia. CURP/RFC únicamente cuando sean necesarios y autorizados; no exigir datos bancarios, médicos o biométricos. Conservar identificación histórica en reportes. Definir permisos de consulta, alta, edición, baja, reactivación e importación; registrar usuario, fecha y valores anteriores/nuevos.
 
 Separar el empleado de su identificador externo en el reloj mediante una relación con dispositivo/origen y vigencias. No asumir que el ID del reloj es globalmente único o permanente. Impedir solapamientos ambiguos; si un código se reutiliza, resolverlo conforme a la fecha de la checada. Los registros sin correspondencia quedan pendientes, nunca se asignan por aproximación de nombre. No borrar empleados con dependencias.
 
+El patrón y el centro de trabajo son datos distintos: un trabajador puede checar en el reloj de una empresa y estar dado de alta ante el IMSS con otra (decisión del propietario, 26/11/2026; en V1 corresponde al campo informativo `empresa_base`, cuyo valor inicial común es AEI, la primera empresa del sistema). Los reportes y exportaciones de tiempo extra identifican al patrón responsable; el centro de trabajo indica dónde se generó la checada. Un trabajador puede checar en relojes de varias empresas en la misma semana o en la misma jornada: V2 mantiene **un solo registro de empleado** para todas las empresas (a diferencia de V1, que tiene un catálogo por empresa) con un código por reloj y vigencia.
+
 ### 13.2 Migración
+
+**Decisión del propietario (26/11/2026):** V2 empieza de cero. Las empresas arrancan en blanco y **no se migran las bases de datos de V1** (`tiempo_extra/Empresas/*/tiempo_extra.db`, `datos/catalogo_te.db`); de V1 solo se reutiliza el código que funcione (matriz 13). El histórico permanece en V1 para consulta (Q07). **Única excepción, decidida el 26/11/2026:** el catálogo de empleados se **importa una sola vez desde Excel** con los pasos siguientes; después, el Excel deja de usarse. Como V2 tiene un solo registro de empleado para todas las empresas (§13.1), la vista previa debe detectar a la misma persona en catálogos de varias empresas y proponer su unión para que RH la confirme; nunca unir identidades automáticamente.
 
 1. Inventariar columnas, formatos, claves, duplicados y vínculos utilizados por el Excel actual. Respaldar archivo y base de datos.
 2. Preparar importador con mapeo explícito, vista previa, validación de ceros iniciales, fechas, nombres, IDs duplicados, horarios y referencias faltantes. No inventar datos ni corregir identidades automáticamente.
@@ -463,7 +496,9 @@ Separar el empleado de su identificador externo en el reloj mediante una relaci�
 
 ## 14. Integridad de checadas y omisiones (ampliación v1.1)
 
-**Decisión confirmada:** la aplicación actual no permite modificar entradas/salidas ni agregar checadas manuales. Mantener esa restricción sobre los registros originales, tanto en interfaz como en servicios, API y base de datos. No habilitar edición directa del reloj ni de sus registros importados. Verificar permisos, integridad de lotes, trazabilidad de origen, respaldo y restauración. La importación automática de registros auténticos del dispositivo sigue permitida.
+**Corrección (auditoría, 26/11/2026):** a diferencia de lo que decía esta sección, V1 **sí** permite modificar a mano entradas/salidas en la captura de tiempo extra (se marcan en azul y se registran en la bitácora `log_alteraciones_reloj`; ver `Documentacion/01` y matriz R022).
+
+**Decisión confirmada para V2:** no permitir modificar entradas/salidas ni agregar checadas manuales. Mantener esa restricción sobre los registros originales, tanto en interfaz como en servicios, API y base de datos. No habilitar edición directa del reloj ni de sus registros importados. Verificar permisos, integridad de lotes, trazabilidad de origen, respaldo y restauración. La importación automática de registros auténticos del dispositivo sigue permitida.
 
 **Requisito aprobado:** módulo separado de incidencias y aclaraciones, que no crea checadas de reloj. Para los registros complementarios, almacenar en entidad distinta: empleado, fecha, movimiento omitido o cuestionado, hora declarada (si existe), motivo, fuente/evidencia, usuario y fecha de captura, autorizador y fecha, estado pendiente/autorizado/rechazado/revocado, referencia al original cuando exista y conformidad/inconformidad del trabajador. Los estados se registran como eventos auditables; revocar o rectificar mediante nuevos eventos, no eliminar historial. Los complementos aprobados y respaldados por el acta con ambas firmas (véase capítulo 16) pueden alimentar una vista derivada de jornada, identificados explícitamente como administrativos. Los pendientes no se convierten en horas confirmadas. Mientras falte evidencia o alguna firma, mantener la aclaración pendiente de validación definitiva, sin inventar una salida ni ocultar trabajo acreditado.
 
@@ -583,6 +618,12 @@ No aprobar la adecuación sin demostrar generación individual, captura de ambas
 ### 17.1 Objetivo y alcance
 
 Permitir la captura administrativa de entradas y salidas completas cuando, por caso fortuito (por ejemplo, interrupción de energía eléctrica), el reloj no pueda registrar los movimientos. También prever falla del dispositivo o imposibilidad comprobada de registro. No insertar, editar ni eliminar movimientos en la fuente original del reloj. Los movimientos complementarios deben participar en el cálculo derivado con su procedencia explícita, y no presentarse como registros biométricos o del dispositivo.
+
+**Caso aprobado: reparto de madrugada (BATAB; Q11, decisión del propietario, 26/11/2026).** El personal de reparto inicia a las 2:00 a. m. fuera de la planta y no puede checar hasta llegar. No es un caso fortuito sino recurrente: la entrada real se registra como aclaración (cap. 14) con hora declarada y evidencia (p. ej. bitácora de ruta), capturada por el auxiliar y aprobada por el autorizador; nunca se modifica la checada del reloj. Se marca con el color azul de aclaración (§7.3). Implicaciones a validar:
+- Una jornada que inicia a las 2:00 tiene al menos 4 h dentro del periodo nocturno; conforme al art. 60 LFT (transcrito en `Documentacion/00`), al tener 3,5 h o más de periodo nocturno «se reputará jornada nocturna» (tope diario de 7 h, art. 61), no diurna. Requiere validación del asesor laboral antes de asignar su horario.
+- El receptor de checadas móviles previsto (Supabase) es la solución de fondo para este grupo; mientras no exista, aplica la aclaración.
+
+**Alimentos por tiempo extra (BATAB; Q11, aprobado 26/11/2026).** Marcar por día a qué alimentos (desayuno, almuerzo, cena) tiene derecho el trabajador, solo si ese día generó tiempo extra. Las reglas no son fijas: se definen **por configuración**, por empresa y con vigencia, solo donde apliquen (p. ej. hora de inicio o fin de la extra, minutos mínimos de extra). Sin regla configurada no se marca nada. V2 solo registra el derecho y lo muestra en el reporte; no calcula importes (sin cálculo de nómina, §7.4).
 
 ### 17.2 Flujo de captura y validación
 
@@ -799,7 +840,7 @@ Propuestas técnicas sujetas a validación: tecnología restante y esquema defin
 
 ### 22.1 Alcance y arquitectura
 
-Utilizar SQLite como almacenamiento inicial de V2. La modalidad exacta de operación y el número de usuarios concurrentes deberán verificarse en la auditoría. El archivo de datos estará en un disco local estable, separado del ejecutable, con permisos del sistema operativo y rutas configurables. No compartir el archivo activo por SMB, carpetas de red ni sincronizadores de nube. Si se requiere acceso desde varias PC, evaluar un servicio central que sea dueño del archivo o migrar a un motor cliente-servidor; no mantener copias independientes sin una estrategia explícita de sincronización.
+Utilizar SQLite como almacenamiento inicial de V2. **Modalidad confirmada (Q13, propietario, 26/11/2026):** V2 se usa en **una sola PC**; las empresas tienen entre 40 y 200 empleados cada una. SQLite local es suficiente. Los usuarios (auxiliar, autorizador y RH, §6) comparten esa PC, por lo que cada uno entra con su propia cuenta de V2 y la bitácora registra al usuario de la aplicación, no al de Windows. Al depender de un solo equipo, el respaldo (§22.3, Q15) es crítico. El archivo de datos estará en un disco local estable, separado del ejecutable, con permisos del sistema operativo y rutas configurables. No compartir el archivo activo por SMB, carpetas de red ni sincronizadores de nube. Si se requiere acceso desde varias PC, evaluar un servicio central que sea dueño del archivo o migrar a un motor cliente-servidor; no mantener copias independientes sin una estrategia explícita de sincronización.
 
 Separar presentación, casos de uso, dominio y persistencia mediante interfaces de repositorios y una unidad transaccional. El motor de jornada no conocerá SQL ni SQLite. Mantener consultas y migraciones específicas del proveedor en infraestructura; no prometer migración automática a otro motor. Revisar antes el acceso a datos de V1 y reutilizar lo compatible.
 
@@ -818,6 +859,8 @@ Propuesta inicial: base principal única para empleados, horarios, reglas, lotes
 SQLite estándar no cifra por defecto. Evaluar cifrado del disco y copias, permisos mínimos, acceso autenticado y protección de claves. No almacenar secretos en texto plano. Un hash local por sí solo no acredita autenticidad contra un administrador con acceso total. Definir retención y acceso conforme a obligaciones aplicables.
 
 Realizar respaldos consistentes mediante SQLite Online Backup API o mecanismo equivalente validado. No copiar únicamente el archivo .db mientras existan escrituras o WAL pendiente. Incluir todos los documentos externos y un manifiesto verificable en el mismo punto lógico de respaldo. Propuesta: respaldo diario y antes de migraciones/cierres, rotación configurable, copia cifrada fuera del equipo y restauraciones de prueba. Acordar RPO/RTO y retención con el propietario. Verificar `integrity_check`, `foreign_key_check`, hashes, conteos y recuperación de actas. Recomendar UPS para el equipo y el reloj cuando proceda.
+
+**Q15 (propietario, 26/11/2026):** en V1 la base de datos solo sirve para el reporte de tiempo extra y la aplicación no tiene una función de respaldo (auditoría: solo hay una regla `.gitignore` para `*.db.bak*`); los Excel no se respaldan. En V2 la base lo guarda todo, por lo que se incluye una opción **Herramientas → Respaldar / Restaurar** que respalda toda la información del control laboral que la ley exija conservar: base de datos, archivos originales del reloj con su hash (Q02), documentos emitidos, actas firmadas digitalizadas, calendarios, horarios, parámetros normativos y bitácora. Se complementa con el respaldo automático descrito arriba. **Plazo de conservación:** el art. 804 LFT (transcrito en `Documentacion/00`) obliga a conservar los controles de asistencia «durante el último año y un año después de que se extinga la relación laboral», y el art. 805 presume ciertos los hechos de la demanda si no se exhiben; las disposiciones STPS del registro electrónico podrían fijar otro plazo. Mientras tanto, V2 no borra nada automáticamente. **Destino:** el usuario elige dónde guardar el respaldo (USB, OneDrive u otra carpeta sincronizada con la nube, otra unidad, etc.); V2 recuerda el destino, verifica que la copia quedó completa y alerta si el último respaldo fuera del equipo es antiguo. Enviar el **archivo de respaldo** a una carpeta sincronizada es válido; lo prohibido es que la base **activa** viva en ella (§22.1). Se recomienda cifrar el respaldo cuando salga del equipo.
 
 ### 22.4 Casos de aceptación adicionales SQLite
 

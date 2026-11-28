@@ -14,7 +14,7 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - [x] T1 — Inventario y diagnóstico A01–A10 → `Documentacion/01_AUDITORIA_SISTEMA_ACTUAL.md` (ruta: delegado, disparador 4+ archivos)
 - [x] T2 — Matriz de reutilización inicial → `Documentacion/13_MATRIZ_DE_REUTILIZACION.md` (ruta: delegado junto con T1)
 - [x] T3 — Revisión del orquestador y presentación al usuario
-- [ ] T3b — Respuestas del propietario a Q01–Q15 (bloquea decisiones de R001, R006–R008, R011–R014)
+- [x] T3b — Respuestas del propietario a Q01–Q15 (bloquea decisiones de R001, R006–R008, R011–R014)
 - [ ] T4 — Propuesta de arquitectura V2 (pendiente de aprobación del diagnóstico)
 
 ## Criterios de aceptación
@@ -29,5 +29,19 @@ Producir el diagnóstico verificable de V1 y la matriz de reutilización inicial
 - 2026-11-24: documento creado; T1+T2 delegados.
 - 2026-11-24: T1+T2 entregados (01: 53 KB; 13: 29 KB, 47 componentes + 22 «desarrollar»). Verificado por orquestador: `git status` de V1 idéntico a la base (` M config.json`, `?? APP_REVISAR_CHECADAS_TE_AEI_260720.xlsx`); hallazgo de redondeo ±0.33 y `neto_semana` confirmados en `tiempo_extra/ClasesComunes/calculo_te.py:111-112,164-176`; sección C de la matriz consistente.
 - 2026-11-24: respondidas Q01 (sin conexión al reloj; reportes por empresa → Genérico), Q02 (conservar archivo original byte a byte + hash), Q03 (solo entrada/salida; descanso según horario), Q04 (nuevo reglamento; tolerancias 0–15 configurables). Q05 en discusión: el propietario sostiene «completar 46 h antes de extras»; se leyó el decreto literal (`Documentacion/00_FUENTE_LEGAL_DECRETO_2026-05-01.md`) y se redactaron conclusiones (`Documentacion/14_CONCLUSIONES_DECRETO_Y_PENDIENTES.md`).
-- Siguiente (25/11/2026): discutir doc 14 §5 con el propietario, cerrar Q05, seguir con Q06–Q15, luego T4.
-- Nada commiteado aún (AGENTS.md, Documentacion/, odd/ y el plan siguen sin commit).
+- 2026-11-24: Q05 (provisional), Q06, Q07 y Q08 parcial resueltas; commit 8a3dbf7; PR #1 fusionado en main sin las correcciones no bloqueantes.
+- 2026-11-26: rama docs/correcciones-q05-q08: ejemplo de compensación corregido, regla de horario incompatible (remanente a los últimos minutos programados + HO03, decisión del propietario), fechas 25→24/11, docs 01 §9, 13 §D y 14 §4.3/§6 actualizados.
+- 2026-11-26: Q08 resuelta: «Empresa base» = patrón IMSS del trabajador (AEI, primera empresa); patrón y centro de trabajo separados con vigencia (plan §13.1).
+- 2026-11-26: varias empresas por trabajador: empleado único, emparejamiento sobre secuencia unificada de relojes, acumulación por trabajador+patrón+semana (plan §5.1-4, §5.3, §13.1).
+- 2026-11-26: traslado entre empresas = tiempo efectivo etiquetado; > 60 min configurable → pendiente de revisión (interpretación art. 58, validar con asesor).
+- 2026-11-26: Q09 resuelta: calendario anual obligatorio; sin él, semanas provisionales; precarga art. 74 confirmada por RH (verificar lista contra LFT).
+- 2026-11-26: Q10 parcial: autorizador designado por empresa; autoriza la empresa donde se trabajó la extra (plan RE03).
+- 2026-11-26: usuarios RH + autorizador por empresa; 4 firmas del reporte; colores de V1 conservados (+ morado traslado); corregido dato falso del plan cap. 14 (V1 sí permite modificar checadas).
+- 2026-11-26: Q10 resuelta: auxiliar administrativo elabora; flujo auxiliar → autorizador → RH; Dirección Vo.Bo. (plan §6).
+- 2026-11-26: Q11 resuelta: reparto 2:00 → aclaración (posible jornada nocturna, validar); alimentos por configuración (plan cap. 17.1).
+- 2026-11-26: Q12 resuelta: arranque en blanco, sin migrar BD de V1; catálogo de empleados importado una vez desde Excel (plan §13.2).
+- 2026-11-26: Q13 resuelta: una PC, 40–200 empleados por empresa; SQLite local, cuenta por usuario (plan §22.1).
+- 2026-11-26: Q14 resuelta: jornada 7:00–22:00 actual (alerta art. 66); principio NL07: contemplar todos los regímenes de la LFT.
+- 2026-11-26: Q15 resuelta: Herramientas → Respaldar/Restaurar, respaldo automático, destino elegido por el usuario. T3b completa (Q01–Q15).
+- 2026-11-26: PR #2 abierto. Transcritos en doc 00 los arts. LFT 22, 22 Bis, 58, 60, 63, 64, 73–75, 173–180, 804–805 (Diputados, última reforma DOF 14-05-2026); confirman art. 74, jornada nocturna desde las 2:00 y conservación art. 804.
+- Siguiente: T4 propuesta de arquitectura.
