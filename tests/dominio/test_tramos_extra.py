@@ -40,6 +40,7 @@ from Dominio.tramos_extra import (
     CAT_DOBLE,
     CAT_ORDINARIO,
     CAT_PENDIENTE,
+    CAT_POR_CLASIFICAR,
     CAT_TRIPLE,
     ETQ_EXCESO_LEGAL,
     Autorizacion,
@@ -78,7 +79,9 @@ def clasificar(lunes, trabajado, programa=None, *, autorizaciones=(), extra=(), 
 
 
 def horas(res):
-    return tuple(res.total_s(c) for c in (CAT_ORDINARIO, CAT_DOBLE, CAT_TRIPLE, CAT_PENDIENTE))
+    """(ordinario, doble, triple, pendiente): suma las dos categorias de pendiente (ver `test_q_e_*`)."""
+    pendiente = res.total_s(CAT_PENDIENTE) + res.total_s(CAT_POR_CLASIFICAR)
+    return tuple(res.total_s(c) for c in (CAT_ORDINARIO, CAT_DOBLE, CAT_TRIPLE)) + (pendiente,)
 
 
 def piezas(res, categoria):
@@ -365,6 +368,51 @@ def test_lo_no_confirmado_pasa_intacto():
     seg, vers = segmentar_semana(LUN_2027, {**exacto(PROGRAMA_46), 0: [(8, (16, 10))]}, tolerancia=10)
     res = repartir_tramos(asignar_extra(seg, vers)[0], vers)
     assert sum(s.intervalo.duracion for s in res.no_confirmados) == 10 * M
+
+
+# --- Q-E: dos categorias de pendiente; `extra_pendiente_clasificacion` solo es fuera de distribucion ---
+
+def test_q_e_la_categoria_neutra_tiene_su_propio_identificador_y_no_es_extra():
+    assert CAT_POR_CLASIFICAR == "tiempo_pendiente_de_clasificar" != CAT_PENDIENTE == "extra_pendiente_clasificacion"
+
+
+def test_q_e_semana_sin_tope_resuelto_queda_en_la_categoria_neutra_y_no_cuenta_como_extra():
+    res = _con_versiones(sin(n.ORDINARIA_SEMANAL_S), exacto(PROGRAMA_46))
+    assert res.total_s(CAT_POR_CLASIFICAR) == 46 * H and res.total_s(CAT_PENDIENTE) == 0
+    assert res.extra_s == 0 and res.provisional and AL12 in res.alertas
+
+
+def test_q_e_semana_sin_resolver_queda_en_la_categoria_neutra():
+    res = _con_versiones(sin(n.SEMANA_INICIO_DIA), exacto(PROGRAMA_46))
+    assert res.total_s(CAT_POR_CLASIFICAR) == 46 * H and res.total_s(CAT_PENDIENTE) == 0
+
+
+def test_q_e_q_f_franja_dudosa_de_la_semana_de_transicion_es_neutra_y_la_extra_segura_sigue_siendo_extra():
+    programa = {d: [(8, 16)] for d in range(6)}
+    res = clasificar(date(2026, 12, 28), {**exacto(programa), 0: [(8, 17)]}, programa)  # 49 h
+    assert res.total_s(CAT_POR_CLASIFICAR) == 2 * H and res.total_s(CAT_PENDIENTE) == 0
+    assert res.total_s(CAT_DOBLE) == H and res.total_s(CAT_ORDINARIO) == 46 * H
+    assert res.extra_s == H  # la franja dudosa no se declara extra
+    assert res.provisional and AL12 in res.alertas
+    assert all(c.motivo == f"semana_transicion:{n.ORDINARIA_SEMANAL_S}" for c in res.segmentos if c.categoria == CAT_POR_CLASIFICAR)
+
+
+def test_q_e_lo_fuera_de_la_distribucion_art_66_sigue_en_extra_pendiente_de_clasificacion():
+    res = clasificar(LUN_2027, con_extras(PROGRAMA_46, lun=5))  # 4 h caben; 1 h pasa de 4 h/dia
+    assert res.total_s(CAT_PENDIENTE) == H and res.total_s(CAT_POR_CLASIFICAR) == 0
+    assert res.extra_s == 5 * H
+
+
+def test_q_e_sin_distribucion_art_66_no_se_afirma_que_sea_extra_fuera_de_distribucion():
+    res = _con_versiones(sin(n.ART66_DIARIO_S), con_extras(PROGRAMA_46, lun=2))
+    assert res.total_s(CAT_POR_CLASIFICAR) == 2 * H and res.total_s(CAT_PENDIENTE) == 0
+    assert f"falta:{n.ART66_DIARIO_S}" in res.motivos
+
+
+def test_q_e_el_resumen_por_dia_cuenta_la_categoria_neutra():
+    res = _con_versiones(sin(n.ORDINARIA_SEMANAL_S), exacto(PROGRAMA_46))
+    assert sum(d.por_clasificar_s for d in res.dias) == 46 * H
+    assert all(d.total_s == d.ordinario_s + d.doble_s + d.triple_s + d.pendiente_s + d.por_clasificar_s for d in res.dias)
 
 
 # --- Tope art. 61 diario: sale del tipo DECLARADO (tipo_efectivo), nunca de lo trabajado ----------

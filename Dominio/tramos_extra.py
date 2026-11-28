@@ -10,7 +10,11 @@ extra, en orden cronologico:
 - distribucion art. 66: 4 h por dia y maximo 4 dias por semana. Lo que cae fuera NO se declara legal ni se
   oculta: queda `extra_pendiente_clasificacion` (propuesta del doc. 03 8.2-11, por validar con el asesor
   laboral; el plan 5.3 pide revision juridica sin fijar la categoria). Esos minutos no consumen el tope
-  doble: no se sabe si la ley los trata como art. 66 o como excedente;
+  doble: no se sabe si la ley los trata como art. 66 o como excedente (decision Q-G, 27/11/2026);
+- `extra_pendiente_clasificacion` es SOLO para eso: extra cierta fuera de la distribucion art. 66. El tiempo
+  del que no se sabe siquiera si es ordinario o extra (semana sin tope resuelto, franja dudosa de la semana
+  de transicion, tope/distribucion art. 66 faltante) va a la categoria neutra `tiempo_pendiente_de_clasificar`
+  y no cuenta como extra (decision Q-E);
 - total por dia art. 68: ordinario + extra por jornada logica; lo que pasa del limite lleva
   `exceso_legal` (tiempo integro, alerta independiente);
 - cada limite se evalua por separado y produce su propio aviso/alerta (NL06).
@@ -41,7 +45,8 @@ from Dominio.tiempo import Intervalo
 CAT_ORDINARIO = "ordinario"
 CAT_DOBLE = "extra_doble"
 CAT_TRIPLE = "extra_triple"
-CAT_PENDIENTE = "extra_pendiente_clasificacion"
+CAT_PENDIENTE = "extra_pendiente_clasificacion"  # extra cierta, pero fuera de la distribucion art. 66
+CAT_POR_CLASIFICAR = "tiempo_pendiente_de_clasificar"  # neutra: no se sabe si es ordinario o extra
 
 # Etiquetas adicionales (no se suman otra vez, plan 5.4).
 ETQ_EXCESO_LEGAL = "exceso_legal"
@@ -100,10 +105,11 @@ class DiaExtra:
     pendiente_s: int
     exceso_legal_s: int
     excede_tope_art61: bool
+    por_clasificar_s: int = 0
 
     @property
     def total_s(self) -> int:
-        return self.ordinario_s + self.doble_s + self.triple_s + self.pendiente_s
+        return self.ordinario_s + self.doble_s + self.triple_s + self.pendiente_s + self.por_clasificar_s
 
 
 @dataclass(frozen=True)
@@ -124,6 +130,10 @@ class ResultadoExtra:
     @property
     def confirmado_s(self) -> int:
         return sum(c.segmento.intervalo.duracion for c in self.segmentos)
+
+    @property
+    def por_clasificar_s(self) -> int:
+        return self.total_s(CAT_POR_CLASIFICAR)
 
     @property
     def extra_s(self) -> int:
@@ -233,7 +243,7 @@ def _repartir(trozos: list[_Trozo], topes: _Topes, avisos: set[str]) -> list[Seg
         seg = trozo.segmento
         inicio, fin = seg.intervalo.inicio, seg.intervalo.fin
         if trozo.base != EXTRA:
-            categoria = CAT_ORDINARIO if trozo.base == ORDINARIO else CAT_PENDIENTE
+            categoria = CAT_ORDINARIO if trozo.base == ORDINARIO else CAT_POR_CLASIFICAR
             salida.append(_clasificado(trozo, inicio, fin, categoria, trozo.motivo))
             continue
         fecha, dia = seg.fecha_real, seg.dia_logico
@@ -242,7 +252,7 @@ def _repartir(trozos: list[_Trozo], topes: _Topes, avisos: set[str]) -> list[Seg
             valores = [topes.valor(c, fecha) for c in claves]
             if None in valores:  # sin distribucion o sin tope no se inventa el corte: pendiente
                 faltante = claves[valores.index(None)]
-                salida.append(_clasificado(trozo, inicio, fin, CAT_PENDIENTE, topes.motivo(faltante, fecha)))
+                salida.append(_clasificado(trozo, inicio, fin, CAT_POR_CLASIFICAR, topes.motivo(faltante, fecha)))
                 break
             limite_dia, limite_dias, tope_66 = valores
             if dia not in uso_dia and len(uso_dia) >= limite_dias:
@@ -340,7 +350,7 @@ def _resumen_por_dia(clasificados, jornadas, versiones, motivos: set[str]) -> tu
         legal = sum(c.segmento.intervalo.duracion for c in por_dia[dia] if ETQ_EXCESO_LEGAL in c.etiquetas)
         dias.append(DiaExtra(
             dia, tipo, tope, ordinario, suma(CAT_DOBLE), suma(CAT_TRIPLE), suma(CAT_PENDIENTE), legal,
-            tope is not None and ordinario > tope,
+            tope is not None and ordinario > tope, suma(CAT_POR_CLASIFICAR),
         ))
     return tuple(dias)
 
